@@ -1,7 +1,8 @@
 package com.nasdroid.apps.logic.discover
 
 import com.nasdroid.api.v2.exception.HttpNotOkException
-import com.nasdroid.api.v2.app.AppV2Api
+import com.nasdroid.api.websocket.app.AppApi
+import com.nasdroid.api.websocket.jsonrpc.MethodCallError
 import com.nasdroid.apps.logic.discover.AvailableApp.Companion.toSanitizedModel
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
@@ -10,7 +11,7 @@ import kotlinx.datetime.toLocalDateTime
  * Retrieves a list of [SortedApps] that can be installed on the system. See [invoke] for details.
  */
 class GetAvailableApps(
-    private val appV2Api: AppV2Api
+    private val appApi: AppApi
 ) {
 
     /**
@@ -27,6 +28,7 @@ class GetAvailableApps(
      * An empty list means all categories will be returned. Note this is not different from a list
      * containing all categories.
      */
+    @Suppress("ReturnCount")
     suspend operator fun invoke(
         searchQuery: String,
         sortMode: SortMode,
@@ -34,11 +36,13 @@ class GetAvailableApps(
         filteredCategories: List<String>,
     ): Result<List<SortedApps>> {
         val availableApps = try {
-            appV2Api.getAvailable()
+            appApi.available()
                 .filter { !it.categories.contains("generic") }
                 .filterByCatalogs(filteredCatalogs)
                 .filterByCategories(filteredCategories)
                 .filterBySearch(searchQuery)
+        } catch (e: MethodCallError) {
+            return Result.failure(e)
         } catch (e: HttpNotOkException) {
             return Result.failure(e)
         }
@@ -92,9 +96,9 @@ class GetAvailableApps(
         return Result.success(sortedApps)
     }
 
-    private fun List<com.nasdroid.api.v2.app.AvailableApp>.filterByCatalogs(
+    private fun List<com.nasdroid.api.websocket.app.AvailableApp>.filterByCatalogs(
         catalogs: List<String>
-    ): List<com.nasdroid.api.v2.app.AvailableApp> {
+    ): List<com.nasdroid.api.websocket.app.AvailableApp> {
         return if (catalogs.isNotEmpty()) {
             filter { catalogs.contains(it.catalog) }
         } else {
@@ -102,9 +106,9 @@ class GetAvailableApps(
         }
     }
 
-    private fun List<com.nasdroid.api.v2.app.AvailableApp>.filterByCategories(
+    private fun List<com.nasdroid.api.websocket.app.AvailableApp>.filterByCategories(
         categories: List<String>
-    ): List<com.nasdroid.api.v2.app.AvailableApp> {
+    ): List<com.nasdroid.api.websocket.app.AvailableApp> {
         return if (categories.isNotEmpty()) {
             filter { app -> app.categories.any { categories.contains(it) } }
         } else {
@@ -112,13 +116,13 @@ class GetAvailableApps(
         }
     }
 
-    private fun List<com.nasdroid.api.v2.app.AvailableApp>.filterBySearch(
+    private fun List<com.nasdroid.api.websocket.app.AvailableApp>.filterBySearch(
         searchQuery: String
-    ): List<com.nasdroid.api.v2.app.AvailableApp> {
+    ): List<com.nasdroid.api.websocket.app.AvailableApp> {
         return if (searchQuery.isNotEmpty()) {
             filter {
                 it.title.contains(searchQuery, ignoreCase = true) ||
-                        it.description.contains(searchQuery, ignoreCase = true)
+                    it.description.contains(searchQuery, ignoreCase = true)
             }
         } else {
             this
@@ -164,4 +168,3 @@ data class SortedApps(
     val groupTitle: String,
     val apps: List<AvailableApp>
 )
-

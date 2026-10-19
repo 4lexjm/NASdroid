@@ -1,3 +1,5 @@
+@file:Suppress("ForbiddenImport")
+
 package com.nasdroid.skeleton
 
 import androidx.compose.animation.animateColor

@@ -1,13 +1,13 @@
 package com.nasdroid.auth.logic.auth
 
-import com.nasdroid.api.v2.ApiStateProvider
+import com.nasdroid.api.websocket.jsonrpc.JsonRpcWebsocketClient
 import com.nasdroid.auth.data.currentserver.CurrentServerSource
 
 /**
  * Signs out the current user. See [invoke] for details.
  */
 class LogOut(
-    private val apiStateProvider: ApiStateProvider,
+    private val client: JsonRpcWebsocketClient,
     private val currentServerSource: CurrentServerSource,
 ) {
 
@@ -15,9 +15,8 @@ class LogOut(
      * Signs out the current user. If no user is signed in, nothing happens. This is guaranteed to
      * result in a "signed out" state.
      */
-    operator fun invoke() {
-        apiStateProvider.serverAddress = null
-        apiStateProvider.authorization = null
+    suspend operator fun invoke() {
+        client.disconnect()
         currentServerSource.setCurrentServer(null)
     }
 }

@@ -3,8 +3,9 @@ package com.nasdroid.dashboard.logic.dataloading.network
 import com.boswelja.capacity.Capacity.Companion.kilobytes
 import com.boswelja.capacity.CapacityUnit
 import com.nasdroid.api.v2.exception.HttpNotOkException
-import com.nasdroid.api.v2.reporting.ReportingV2Api
-import com.nasdroid.api.v2.reporting.RequestedGraph
+import com.nasdroid.api.websocket.jsonrpc.MethodCallError
+import com.nasdroid.api.websocket.reporting.ReportingApi
+import com.nasdroid.api.websocket.reporting.RequestedGraph
 import kotlinx.datetime.Clock
 import kotlin.time.Duration.Companion.seconds
 
@@ -12,7 +13,7 @@ import kotlin.time.Duration.Companion.seconds
  * Retrieves network utilisation data for the system. See [invoke] for details.
  */
 class GetNetworkUsageData(
-    private val reportingV2Api: ReportingV2Api
+    private val reportingApi: ReportingApi
 ) {
 
     /**
@@ -21,10 +22,12 @@ class GetNetworkUsageData(
      */
     suspend operator fun invoke(adapters: List<String>): Result<NetworkUsageData> {
         return try {
-            if (adapters.isEmpty()) return Result.success(NetworkUsageData(emptyList()))
+            if (adapters.isEmpty()) {
+                return Result.success(NetworkUsageData(emptyList()))
+            }
             val now = Clock.System.now()
-            val adapterGraphs = reportingV2Api.getGraphData(
-                graphs = adapters.map { RequestedGraph(INTERFACE_GRAPH_NAME, it) },
+            val adapterGraphs = reportingApi.getData(
+                graphs = adapters.map { RequestedGraph(RequestedGraph.GraphName.InterfaceTraffic, it) },
                 start = now - 20.seconds,
                 end = now,
             )
@@ -44,13 +47,11 @@ class GetNetworkUsageData(
                     adapterUtilisation = adapterUtilisations
                 )
             )
+        } catch (e: MethodCallError) {
+            Result.failure(e)
         } catch (e: HttpNotOkException) {
             Result.failure(e)
         }
-    }
-
-    companion object {
-        private const val INTERFACE_GRAPH_NAME = "interface"
     }
 }
 

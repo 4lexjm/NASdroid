@@ -158,6 +158,7 @@ internal fun CatalogSelector(
     }
 }
 
+@Suppress("LongMethod")
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 internal fun CategorySelector(

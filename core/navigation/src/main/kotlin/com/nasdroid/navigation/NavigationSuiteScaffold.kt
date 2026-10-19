@@ -1,3 +1,5 @@
+@file:Suppress("ForbiddenImport", "LongMethod")
+
 package com.nasdroid.navigation
 
 import androidx.compose.foundation.layout.PaddingValues

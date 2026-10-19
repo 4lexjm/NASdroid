@@ -20,7 +20,7 @@ interface ReportingApi {
      * List of possible graphs can be retrieved using [graphs].
      * [aggregate] will return aggregate available data for each graph (e.g. min, max, mean).
      */
-    suspend fun getData(graphs: List<RequestedGraph>, aggregate: Boolean = true): GraphData
+    suspend fun getData(graphs: List<RequestedGraph>, aggregate: Boolean = true): List<GraphData>
 
     /**
      * Get reporting data for given graphs.
@@ -32,7 +32,7 @@ interface ReportingApi {
         unit: GraphUnit,
         page: Int = 1,
         aggregate: Boolean = true
-    ): GraphData
+    ): List<GraphData>
 
     /**
      * Get reporting data for given graphs.
@@ -44,12 +44,12 @@ interface ReportingApi {
         start: Instant,
         end: Instant,
         aggregate: Boolean = true
-    ): GraphData
+    ): List<GraphData>
 
     /**
      * Get reporting data for name graph.
      */
-    suspend fun graph(name: String, aggregate: Boolean = true): GraphData
+    suspend fun graph(name: String, aggregate: Boolean = true): List<GraphData>
 
     /**
      * Get reporting data for name graph.
@@ -59,7 +59,7 @@ interface ReportingApi {
         unit: GraphUnit,
         page: Int = 1,
         aggregate: Boolean = true
-    ): GraphData
+    ): List<GraphData>
 
     /**
      * Get reporting data for name graph.
@@ -69,14 +69,14 @@ interface ReportingApi {
         start: Instant,
         end: Instant,
         aggregate: Boolean = true
-    ): GraphData
+    ): List<GraphData>
 
     /**
      * Get a list of all graphs that can be queried from the system.
      */
     suspend fun graphs(
-        limit: Int = 0,
-        offset: Int = 0,
+        limit: Int? = null,
+        offset: Int? = null,
     ): List<Graph>
 
     /**
@@ -198,57 +198,70 @@ data class ReportingConfig(
     val tier1UpdateInterval: Int
 )
 
+/**
+ * Describes a graph to be requested from [ReportingApi.getData].
+ *
+ * @property name The type of graph to request.
+ * @property identifier Optional device or metric identifier (e.g., disk or network interface name).
+ */
 @Serializable
 data class RequestedGraph(
     @SerialName("name")
     val name: GraphName,
     @SerialName("identifier")
-    val identifier: String?
+    val identifier: String? = null,
 ) {
     @Serializable
-    enum class GraphName {
+    enum class GraphName(val serialName: String) {
         @SerialName("cpu")
-        CpuUsage,
+        CpuUsage("cpu"),
         @SerialName("cputemp")
-        CpuTemp,
+        CpuTemp("cputemp"),
         @SerialName("disk")
-        DiskIo,
+        DiskIo("disk"),
         @SerialName("interface")
-        InterfaceTraffic,
+        InterfaceTraffic("interface"),
         @SerialName("load")
-        Load,
+        Load("load"),
         @SerialName("processes")
-        ActiveProcesses,
+        ActiveProcesses("processes"),
         @SerialName("memory")
-        MemoryUsage,
+        MemoryUsage("memory"),
+        @SerialName("swap")
+        Swap("swap"),
         @SerialName("uptime")
-        Uptime,
+        Uptime("uptime"),
         @SerialName("arcactualrate")
-        ArcActualRate,
+        ArcActualRate("arcactualrate"),
         @SerialName("arcrate")
-        ArcRate,
+        ArcRate("arcrate"),
         @SerialName("arcsize")
-        ArcSize,
+        ArcSize("arcsize"),
         @SerialName("arcresult")
-        ArcResult,
+        ArcResult("arcresult"),
         @SerialName("disktemp")
-        DiskTemp,
+        DiskTemp("disktemp"),
         @SerialName("upscharge")
-        UpsCharge,
+        UpsCharge("upscharge"),
         @SerialName("upsruntime")
-        UpsRuntime,
+        UpsRuntime("upsruntime"),
         @SerialName("upsvoltage")
-        UpsVoltage,
+        UpsVoltage("upsvoltage"),
         @SerialName("upscurrent")
-        UpsCurrent,
+        UpsCurrent("upscurrent"),
         @SerialName("upsfrequency")
-        UpsFrequency,
+        UpsFrequency("upsfrequency"),
         @SerialName("upsload")
-        UpsLoad,
+        UpsLoad("upsload"),
         @SerialName("upstemperature")
-        UpsTemperature
+        UpsTemperature("upstemperature");
     }
 }
+
+/**
+ * Typealias for [GraphUnit] for backwards compatibility.
+ */
+typealias Units = GraphUnit
 
 @Serializable
 enum class GraphUnit {
@@ -339,3 +352,9 @@ data class Graph(
     @SerialName("identifiers")
     val identifiers: List<String>?,
 )
+
+/**
+ * Typealias for [Graph] to avoid ambiguity with UI/logic Graph models.
+ */
+typealias ReportingGraph = Graph
+

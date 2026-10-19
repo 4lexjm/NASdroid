@@ -2,8 +2,8 @@ package com.nasdroid.dashboard.logic.dataloading.memory
 
 import com.boswelja.capacity.Capacity.Companion.bytes
 import com.nasdroid.api.v2.exception.HttpNotOkException
-import com.nasdroid.api.v2.reporting.ReportingGraphData
-import com.nasdroid.api.v2.reporting.ReportingV2Api
+import com.nasdroid.api.websocket.reporting.GraphData
+import com.nasdroid.api.websocket.reporting.ReportingApi
 import io.mockk.coEvery
 import io.mockk.mockk
 import kotlinx.coroutines.test.runTest
@@ -14,7 +14,7 @@ import kotlin.test.assertTrue
 
 class GetMemoryUsageDataTest {
 
-    private lateinit var mockReportingApi: ReportingV2Api
+    private lateinit var mockReportingApi: ReportingApi
 
     private lateinit var getMemoryUsageData: GetMemoryUsageData
 
@@ -28,7 +28,7 @@ class GetMemoryUsageDataTest {
     @Test
     fun `when api throws, error is returned`() = runTest {
         coEvery {
-            mockReportingApi.getGraphData(graphs = any(), start = any(), end = any())
+            mockReportingApi.getData(graphs = any(), start = any(), end = any())
         } throws HttpNotOkException(418, "I'm a teapot")
 
         val result = getMemoryUsageData()
@@ -43,7 +43,7 @@ class GetMemoryUsageDataTest {
     @Test
     fun `when api returns data, data is returned`() = runTest {
         coEvery {
-            mockReportingApi.getGraphData(graphs = any(), start = any(), end = any())
+            mockReportingApi.getData(graphs = any(), start = any(), end = any())
         } returns listOf(realMemoryData)
 
         val result = getMemoryUsageData()
@@ -60,7 +60,7 @@ class GetMemoryUsageDataTest {
     }
 
     companion object {
-        private val realMemoryData = ReportingGraphData(
+        private val realMemoryData = GraphData(
             name = "memory",
             identifier = null,
             data = listOf(

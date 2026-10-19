@@ -10,6 +10,7 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.mapLatest
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.launch
 
 /**
  * Exposes all data and events needed for a selector that displays the current selected server, as
@@ -36,9 +37,14 @@ class ServerSelectorViewModel(
      * Logs the user out of the current server.
      */
     fun logOut() {
-        logOut.invoke()
+        viewModelScope.launch {
+            logOut.invoke()
+        }
     }
 
+    /**
+     * Fallback configuration constants.
+     */
     companion object {
         private val FallbackServerDetails = Server(
             name = "Nothing",

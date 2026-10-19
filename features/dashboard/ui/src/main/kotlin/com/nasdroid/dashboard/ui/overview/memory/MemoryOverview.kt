@@ -126,8 +126,8 @@ internal fun MemoryOverview(
         Spacer(Modifier.height(4.dp))
         SegmentedLinearProgressIndicator(
             segments = listOf(
-                utilisation?.usedPercent ?: 0.4f,
-                utilisation?.cachedPercent ?: 0.2f
+                utilisation?.usedPercent ?: DEFAULT_USED_PERCENT,
+                utilisation?.cachedPercent ?: DEFAULT_CACHED_PERCENT
             ),
             modifier = Modifier
                 .height(24.dp)
@@ -202,3 +202,6 @@ fun MemoryCardPreview() {
         )
     }
 }
+
+private const val DEFAULT_USED_PERCENT = 0.4f
+private const val DEFAULT_CACHED_PERCENT = 0.2f

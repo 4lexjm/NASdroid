@@ -3,30 +3,31 @@ package com.nasdroid.storage.logic.pool
 import com.boswelja.capacity.Capacity
 import com.boswelja.capacity.Capacity.Companion.bytes
 import com.nasdroid.api.v2.exception.HttpNotOkException
-import com.nasdroid.api.v2.pool.Pool
-import com.nasdroid.api.v2.pool.PoolV2Api
+import com.nasdroid.api.websocket.jsonrpc.MethodCallError
+import com.nasdroid.api.websocket.pool.Pool
+import com.nasdroid.api.websocket.pool.PoolApi
 import kotlinx.datetime.Instant
 
 /**
  * Retrieves information about a single storage pool. See [invoke] for details.
  */
 class GetPoolDetails(
-    private val poolV2Api: PoolV2Api
+    private val poolApi: PoolApi
 ) {
 
     /**
-     * Gets a [PoolDetails] for the storage pool with the give ID.
+     * Gets a [PoolDetails] for the storage pool with the given ID.
      */
     suspend operator fun invoke(poolId: Int): Result<PoolDetails> {
         return try {
-            val dto = poolV2Api.getPool(poolId)
+            val dto = poolApi.getPool(poolId)
             val result = PoolDetails(
                 id = dto.id,
                 name = dto.name,
                 usage = PoolDetails.Usage(
-                    usableCapacity = dto.size!!.bytes,
-                    usedCapacity = dto.allocated!!.bytes,
-                    availableCapacity = dto.free!!.bytes
+                    usableCapacity = (dto.size ?: 0L).bytes,
+                    usedCapacity = (dto.allocated ?: 0L).bytes,
+                    availableCapacity = (dto.free ?: 0L).bytes
                 ),
                 topology = PoolDetails.Topology(
                     dataTopology = dto.topology.data.toTopologyDescriptor(),
@@ -38,14 +39,14 @@ class GetPoolDetails(
                 ),
                 zfsHealth = PoolDetails.ZfsHealth(
                     poolStatus = PoolDetails.ZfsHealth.PoolStatus.ONLINE, // TODO
-                    totalErrors = dto.scan.errors,
+                    totalErrors = dto.scan?.errors ?: 0,
                     scheduledScrub = null, // TODO
-                    isAutotrimEnabled = dto.autotrim.rawValue == "on",
-                    lastScan = dto.scan.endTime?.let { scanEndTime ->
+                    isAutotrimEnabled = dto.autotrim.rawValue.equals("on", ignoreCase = true),
+                    lastScan = dto.scan?.endTime?.let { scanEndTime ->
                         PoolDetails.ZfsHealth.LastScan(
-                            function = dto.scan.function,
+                            function = dto.scan?.function.orEmpty(),
                             finishedAt = Instant.fromEpochMilliseconds(scanEndTime),
-                            totalErrors = dto.scan.errors
+                            totalErrors = dto.scan?.errors ?: 0
                         )
                     }
                 ),
@@ -58,13 +59,17 @@ class GetPoolDetails(
                 )
             )
             Result.success(result)
+        } catch (e: MethodCallError) {
+            Result.failure(e)
         } catch (e: HttpNotOkException) {
             Result.failure(e)
         }
     }
 
     private fun List<Pool.VDev>.toTopologyDescriptor(): PoolDetails.Topology.TopologyDescriptor? {
-        if (isEmpty()) return null
+        if (isEmpty()) {
+            return null
+        }
         return PoolDetails.Topology.TopologyDescriptor(
             deviceCount = count(),
             type = PoolDetails.Topology.TopologyDescriptor.Type.RAIDZ1, // TODO Different types?
@@ -142,6 +147,9 @@ data class PoolDetails(
              * All possible types for a dataset.
              */
             enum class Type {
+                /**
+                 * RAIDZ1 topology type.
+                 */
                 RAIDZ1
             }
         }
@@ -168,6 +176,9 @@ data class PoolDetails(
          * All possible statuses for a pool.
          */
         enum class PoolStatus {
+            /**
+             * Pool is online and healthy.
+             */
             ONLINE,
         }
 

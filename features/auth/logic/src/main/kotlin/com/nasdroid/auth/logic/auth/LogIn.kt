@@ -3,7 +3,8 @@ package com.nasdroid.auth.logic.auth
 import com.nasdroid.api.v2.exception.ClientRequestException
 import com.nasdroid.api.v2.exception.ServerResponseException
 import com.nasdroid.api.websocket.auth.AuthApi
-import com.nasdroid.api.websocket.ddp.DdpWebsocketClient
+import com.nasdroid.api.websocket.jsonrpc.JsonRpcWebsocketClient
+import com.nasdroid.api.websocket.jsonrpc.MethodCallError
 import com.nasdroid.auth.data.currentserver.CurrentServerSource
 import com.nasdroid.auth.data.serverstore.AuthenticatedServersStore
 import com.nasdroid.auth.data.serverstore.Authentication
@@ -17,7 +18,7 @@ import java.net.UnknownHostException
 class LogIn(
     private val authenticatedServersStore: AuthenticatedServersStore,
     private val currentServerSource: CurrentServerSource,
-    private val client: DdpWebsocketClient,
+    private val client: JsonRpcWebsocketClient,
     private val authApi: AuthApi,
 ) {
 
@@ -25,7 +26,7 @@ class LogIn(
      * Attempts to authenticate with the given [Server]. If the stored token does not work, an error
      * is returned.
      */
-    suspend operator fun invoke(server: Server) : StrongResult<Unit, LoginError> {
+    suspend operator fun invoke(server: Server): StrongResult<Unit, LoginError> {
         val authentication = authenticatedServersStore.getAuthentication(server.id)
         return try {
             // Connect websocket
@@ -47,6 +48,9 @@ class LogIn(
                 client.disconnect()
                 StrongResult.failure(LoginError.InvalidCredentials)
             }
+        } catch (_: MethodCallError) {
+            client.disconnect()
+            StrongResult.failure(LoginError.InvalidCredentials)
         } catch (_: ClientRequestException) {
             client.disconnect()
             StrongResult.failure(LoginError.InvalidCredentials)

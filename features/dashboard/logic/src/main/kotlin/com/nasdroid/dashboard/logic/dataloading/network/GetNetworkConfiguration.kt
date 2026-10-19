@@ -1,13 +1,14 @@
 package com.nasdroid.dashboard.logic.dataloading.network
 
 import com.nasdroid.api.v2.exception.HttpNotOkException
-import com.nasdroid.api.v2.reporting.ReportingV2Api
+import com.nasdroid.api.websocket.jsonrpc.MethodCallError
+import com.nasdroid.api.websocket.reporting.ReportingApi
 
 /**
  * Get a simple representation of the system network configuration. See [invoke] for details.
  */
 class GetNetworkConfiguration(
-    private val reportingV2Api: ReportingV2Api,
+    private val reportingApi: ReportingApi,
 ) {
 
     /**
@@ -16,10 +17,9 @@ class GetNetworkConfiguration(
      */
     suspend operator fun invoke(): Result<NetworkConfiguration> {
         return try {
-            val adapterNames = reportingV2Api.getReportingGraphs(
+            val adapterNames = reportingApi.graphs(
                 limit = null,
                 offset = null,
-                sort = null
             ).first { it.name == INTERFACE_GRAPH_NAME }.identifiers
             val adapters = adapterNames.orEmpty().map {
                 NetworkConfiguration.NetworkAdapter(
@@ -28,11 +28,16 @@ class GetNetworkConfiguration(
                 )
             }
             Result.success(NetworkConfiguration(adapters = adapters))
+        } catch (e: MethodCallError) {
+            Result.failure(e)
         } catch (e: HttpNotOkException) {
             Result.failure(e)
         }
     }
 
+    /**
+     * Constants used for network configuration graph querying.
+     */
     companion object {
         private const val INTERFACE_GRAPH_NAME = "interface"
     }

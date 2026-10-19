@@ -1,6 +1,6 @@
 package com.nasdroid.reporting.logic.graph
 
-import com.nasdroid.api.v2.reporting.ReportingV2Api
+import com.nasdroid.api.websocket.reporting.ReportingApi
 import com.nasdroid.core.strongresult.StrongResult
 import com.nasdroid.reporting.logic.DEFAULT_END_SECONDS
 import com.nasdroid.reporting.logic.DEFAULT_START_SECONDS
@@ -18,20 +18,20 @@ import kotlin.time.Duration.Companion.seconds
 
 class GetSystemGraphsTest {
 
-    private lateinit var reportingV2Api: ReportingV2Api
+    private lateinit var reportingApi: ReportingApi
 
     private lateinit var getSystemGraphs: GetSystemGraphs
 
     @BeforeTest
     fun setUp() {
-        reportingV2Api = mockk()
+        reportingApi = mockk()
 
-        getSystemGraphs = GetSystemGraphs(reportingV2Api, Dispatchers.Default)
+        getSystemGraphs = GetSystemGraphs(reportingApi, Dispatchers.Default)
     }
 
     @Test
     fun `given data is valid, when graphs requested, then result is two item success`() = runTest {
-        mockValidGetGraphData(reportingV2Api)
+        mockValidGetGraphData(reportingApi)
 
         val result = getSystemGraphs()
 
@@ -73,7 +73,7 @@ class GetSystemGraphsTest {
 
     @Test
     fun `given invalid data, when graphs requested, then error invalid data returned`() = runTest {
-        mockInvalidGetGraphData(reportingV2Api)
+        mockInvalidGetGraphData(reportingApi)
 
         val result = getSystemGraphs()
 

@@ -26,6 +26,7 @@ import kotlinx.coroutines.flow.update
 /**
  * A ViewModel that provides the necessary data for the reporting dashboard.
  */
+@Suppress("LongParameterList")
 class ReportingOverviewViewModel(
     private val getCpuGraphs: GetCpuGraphs,
     private val getDiskGraphs: GetDiskGraphs,
@@ -68,10 +69,10 @@ class ReportingOverviewViewModel(
             }
             val result = availableDeviceResult?.fold(
                 onSuccess = { availableDevices ->
+                    _selectedDevices.value = availableDevices
                     if (availableDevices.size <= 1) {
                         FilterOptionState.NoOptions
                     } else {
-                        _selectedDevices.value = availableDevices
                         FilterOptionState.HasOptions(availableDevices)
                     }
                 },
@@ -162,11 +163,34 @@ class ReportingOverviewViewModel(
  * Encapsulates all possible categories for all reporting graphs.
  */
 enum class ReportingCategory {
+    /**
+     * CPU metrics category.
+     */
     CPU,
+
+    /**
+     * Disk metrics category.
+     */
     DISK,
+
+    /**
+     * Memory metrics category.
+     */
     MEMORY,
+
+    /**
+     * Network metrics category.
+     */
     NETWORK,
+
+    /**
+     * System metrics category.
+     */
     SYSTEM,
+
+    /**
+     * ZFS metrics category.
+     */
     ZFS
 }
 

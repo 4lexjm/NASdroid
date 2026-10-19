@@ -26,8 +26,19 @@ data class CachedInstalledApp(
      * Possible states an application may be in.
      */
     enum class State {
+        /**
+         * The app is currently being deployed or started.
+         */
         DEPLOYING,
+
+        /**
+         * The app is active and running.
+         */
         ACTIVE,
+
+        /**
+         * The app is stopped.
+         */
         STOPPED
     }
 }

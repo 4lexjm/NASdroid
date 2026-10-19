@@ -1,9 +1,9 @@
 package com.nasdroid.reporting.logic.graph
 
 import com.boswelja.capacity.Capacity.Companion.kibibytes
-import com.nasdroid.api.v2.reporting.ReportingV2Api
-import com.nasdroid.api.v2.reporting.RequestedGraph
-import com.nasdroid.api.v2.reporting.Units
+import com.nasdroid.api.websocket.reporting.GraphUnit
+import com.nasdroid.api.websocket.reporting.ReportingApi
+import com.nasdroid.api.websocket.reporting.RequestedGraph
 import com.nasdroid.core.strongresult.StrongResult
 import com.nasdroid.reporting.logic.graph.CapacityGraph.Companion.toCapacityGraph
 import com.nasdroid.reporting.logic.graph.TemperatureGraph.Companion.toTemperatureGraph
@@ -14,7 +14,7 @@ import kotlinx.coroutines.withContext
  * Retrieves the data needed to display all disk-related graphs. See [invoke] for details.
  */
 class GetDiskGraphs(
-    private val reportingV2Api: ReportingV2Api,
+    private val reportingApi: ReportingApi,
     private val calculationDispatcher: CoroutineDispatcher,
 ) {
 
@@ -32,19 +32,19 @@ class GetDiskGraphs(
         if (disks.isEmpty()) {
             return@withContext StrongResult.success(emptyList())
         }
-        val reportingData = reportingV2Api.getGraphData(
+        val reportingData = reportingApi.getData(
             graphs = disks.flatMap {
                 listOf(
-                    RequestedGraph("disk", it),
-                    RequestedGraph("disktemp", it)
+                    RequestedGraph(RequestedGraph.GraphName.DiskIo, it),
+                    RequestedGraph(RequestedGraph.GraphName.DiskTemp, it)
                 )
             },
             unit = when (timeframe) {
-                GraphTimeframe.Hour -> Units.HOUR
-                GraphTimeframe.Day -> Units.DAY
-                GraphTimeframe.Week -> Units.WEEK
-                GraphTimeframe.Month -> Units.MONTH
-                GraphTimeframe.Year -> Units.YEAR
+                GraphTimeframe.Hour -> GraphUnit.Hour
+                GraphTimeframe.Day -> GraphUnit.Day
+                GraphTimeframe.Week -> GraphUnit.Week
+                GraphTimeframe.Month -> GraphUnit.Month
+                GraphTimeframe.Year -> GraphUnit.Year
             },
             page = 1
         )

@@ -39,6 +39,7 @@ dependencies {
     api(projects.core.api)
     api(projects.core.strongResult)
     api(libs.datatypes.capacity)
+    api(libs.kotlinx.serialization.json)
 
     implementation(libs.androidx.navigation)
     implementation(libs.bundles.compose)

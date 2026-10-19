@@ -1,7 +1,7 @@
 package com.nasdroid.reporting.logic.graph
 
 import com.boswelja.bitrate.Bitrate.Companion.kilobits
-import com.nasdroid.api.v2.reporting.ReportingV2Api
+import com.nasdroid.api.websocket.reporting.ReportingApi
 import com.nasdroid.core.strongresult.StrongResult
 import com.nasdroid.reporting.logic.DEFAULT_VALID_DATA
 import com.nasdroid.reporting.logic.mockInvalidGetGraphData
@@ -16,20 +16,20 @@ import kotlin.test.assertEquals
 
 class GetNetworkGraphsTest {
 
-    private lateinit var reportingV2Api: ReportingV2Api
+    private lateinit var reportingApi: ReportingApi
 
     private lateinit var getNetworkGraphs: GetNetworkGraphs
 
     @BeforeTest
     fun setUp() {
-        reportingV2Api = mockk()
+        reportingApi = mockk()
 
-        getNetworkGraphs = GetNetworkGraphs(reportingV2Api, Dispatchers.Default)
+        getNetworkGraphs = GetNetworkGraphs(reportingApi, Dispatchers.Default)
     }
 
     @Test
     fun `given data is valid, when zero interfaces are requested, then result is empty success`() = runTest {
-        mockValidGetGraphData(reportingV2Api)
+        mockValidGetGraphData(reportingApi)
 
         val result = getNetworkGraphs(emptyList())
 
@@ -38,7 +38,7 @@ class GetNetworkGraphsTest {
 
     @Test
     fun `given data is valid, when one interface is requested, then result is one item success`() = runTest {
-        mockValidGetGraphData(reportingV2Api)
+        mockValidGetGraphData(reportingApi)
 
         val result = getNetworkGraphs(listOf("eno1"))
 
@@ -66,7 +66,7 @@ class GetNetworkGraphsTest {
 
     @Test
     fun `given invalid data, when graphs requested, then error invalid data returned`() = runTest {
-        mockInvalidGetGraphData(reportingV2Api)
+        mockInvalidGetGraphData(reportingApi)
 
         val result = getNetworkGraphs(listOf("eno1"))
 

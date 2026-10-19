@@ -1,7 +1,7 @@
 package com.nasdroid.apps.logic.installed
 
-import com.nasdroid.api.v2.chart.release.ChartRelease
-import com.nasdroid.api.v2.chart.release.ChartReleaseV2Api
+import com.nasdroid.api.websocket.app.AppApi
+import com.nasdroid.api.websocket.app.InstalledApp
 import com.nasdroid.apps.data.installed.CachedInstalledApp
 import com.nasdroid.apps.data.installed.InstalledAppCache
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -16,7 +16,7 @@ import kotlin.time.Duration.Companion.minutes
  * Gets a list of applications installed on the system. See [invoke] for details.
  */
 class GetInstalledApps(
-    private val chartReleaseV2Api: ChartReleaseV2Api,
+    private val appApi: AppApi,
     private val installedAppCache: InstalledAppCache,
     private val clock: Clock,
 ) {
@@ -35,7 +35,7 @@ class GetInstalledApps(
                 val isNewQuery = (lastSearchQuery != searchTerm)
                 val isCacheStale = (queryTime - lastCacheRefresh) > CacheValidityTimer
                 if (!isNewQuery || isCacheStale) {
-                    val releaseDtos = chartReleaseV2Api.getChartReleases()
+                    val releaseDtos = appApi.query()
                     installedAppCache.submitInstalledApps(
                         releaseDtos.map { installedApp ->
                             installedApp.toCachedApp()
@@ -52,25 +52,29 @@ class GetInstalledApps(
             }
     }
 
-    private fun ChartRelease.toCachedApp(): CachedInstalledApp {
+    private fun InstalledApp.toCachedApp(): CachedInstalledApp {
         return CachedInstalledApp(
             name = id,
             version = humanVersion,
-            iconUrl = chartMetadata.icon,
-            catalog = catalog,
-            train = catalogTrain,
-            state = when (status) {
-                ChartRelease.Status.DEPLOYING -> CachedInstalledApp.State.DEPLOYING
-                ChartRelease.Status.ACTIVE -> CachedInstalledApp.State.ACTIVE
-                ChartRelease.Status.STOPPED -> CachedInstalledApp.State.STOPPED
+            iconUrl = metadata.icon.orEmpty(),
+            catalog = "TRUENAS",
+            train = metadata.train,
+            state = when (state) {
+                InstalledApp.State.DEPLOYING,
+                InstalledApp.State.STOPPING -> CachedInstalledApp.State.DEPLOYING
+                InstalledApp.State.RUNNING -> CachedInstalledApp.State.ACTIVE
+                InstalledApp.State.STOPPED,
+                InstalledApp.State.CRASHED,
+                InstalledApp.State.ERROR -> CachedInstalledApp.State.STOPPED
             },
-            hasUpdateAvailable = updateAvailable,
-            webPortalUrl = portals?.let { portals ->
-                portals.open?.firstOrNull() ?: portals.webPortal?.firstOrNull()
-            }
+            hasUpdateAvailable = upgradeAvailable || imageUpdatesAvailable,
+            webPortalUrl = portals.values.firstOrNull()
         )
     }
 
+    /**
+     * Cache timing constants.
+     */
     companion object {
         private val CacheValidityTimer = 1.minutes
     }
@@ -117,8 +121,19 @@ data class InstalledAppOverview(
      * Possible states an application may be in.
      */
     enum class State {
+        /**
+         * The app is currently deploying or transitioning.
+         */
         DEPLOYING,
+
+        /**
+         * The app is active and running.
+         */
         ACTIVE,
+
+        /**
+         * The app is currently stopped.
+         */
         STOPPED
     }
 }

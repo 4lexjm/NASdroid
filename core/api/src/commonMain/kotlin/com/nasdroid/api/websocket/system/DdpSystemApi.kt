@@ -49,16 +49,16 @@ class DdpSystemApi(
         return client.callMethod("system.ready")
     }
 
-    override suspend fun reboot(delay: Duration): Int {
-        return client.callMethod("system.reboot", listOf(mapOf("delay" to delay.inWholeSeconds)))
+    override suspend fun reboot(delay: Duration?, reason: String): Int {
+        return client.callMethod("system.reboot", listOf(mapOf("delay" to delay?.inWholeSeconds)))
     }
 
     override suspend fun releaseNotesUrl(version: String?): String? {
         return client.callMethod("system.release_notes_url", listOf(version))
     }
 
-    override suspend fun shutdown(delay: Duration): Int {
-        return client.callMethod("system.shutdown", listOf(mapOf("delay" to delay.inWholeSeconds)))
+    override suspend fun shutdown(delay: Duration?, reason: String): Int {
+        return client.callMethod("system.shutdown", listOf(mapOf("delay" to delay?.inWholeSeconds)))
     }
 
     override suspend fun state(): State {

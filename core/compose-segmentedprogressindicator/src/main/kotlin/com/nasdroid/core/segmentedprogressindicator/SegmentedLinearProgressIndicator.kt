@@ -1,3 +1,5 @@
+@file:Suppress("ForbiddenImport", "TopLevelPropertyNaming", "MaxLineLength")
+
 package com.nasdroid.core.segmentedprogressindicator
 
 import androidx.compose.foundation.Canvas

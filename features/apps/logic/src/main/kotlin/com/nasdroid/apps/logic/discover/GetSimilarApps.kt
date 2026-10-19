@@ -1,14 +1,15 @@
 package com.nasdroid.apps.logic.discover
 
 import com.nasdroid.api.v2.exception.HttpNotOkException
-import com.nasdroid.api.v2.app.AppV2Api
+import com.nasdroid.api.websocket.app.AppApi
+import com.nasdroid.api.websocket.jsonrpc.MethodCallError
 import com.nasdroid.apps.logic.discover.AvailableApp.Companion.toSanitizedModel
 
 /**
  * Retrieves a list of [AvailableApp]s similar to another specified app. See [invoke] for details.
  */
 class GetSimilarApps(
-    private val appV2Api: AppV2Api
+    private val appApi: AppApi
 ) {
     /**
      * Retrieves a list of [AvailableApp]s similar to the app specified by parameters.
@@ -19,11 +20,14 @@ class GetSimilarApps(
      * @param catalogTrain The [AvailableApp.catalogTrain] of the app whose similar apps we are
      * looking for.
      */
+    @Suppress("UnusedParameter")
     suspend operator fun invoke(appId: String, catalogName: String, catalogTrain: String): Result<List<AvailableApp>> {
         return try {
-            val result = appV2Api.getSimilarTo(appId, catalogName, catalogTrain)
+            val result = appApi.similar(appId, catalogTrain)
                 .map { it.toSanitizedModel() }
             Result.success(result)
+        } catch (e: MethodCallError) {
+            Result.failure(e)
         } catch (e: HttpNotOkException) {
             Result.failure(e)
         }

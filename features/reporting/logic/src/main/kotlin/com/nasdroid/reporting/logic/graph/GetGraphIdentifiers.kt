@@ -1,6 +1,6 @@
 package com.nasdroid.reporting.logic.graph
 
-import com.nasdroid.api.v2.reporting.ReportingV2Api
+import com.nasdroid.api.websocket.reporting.ReportingApi
 import com.nasdroid.core.strongresult.StrongResult
 import com.nasdroid.reporting.data.metadata.CachedGraphMetadata
 import com.nasdroid.reporting.data.metadata.GraphMetadataCache
@@ -17,7 +17,7 @@ import kotlinx.coroutines.flow.mapLatest
  * [invoke] for details.
  */
 class GetGraphIdentifiers(
-    private val reportingV2Api: ReportingV2Api,
+    private val reportingApi: ReportingApi,
     private val graphMetadataCache: GraphMetadataCache
 ) {
 
@@ -34,7 +34,7 @@ class GetGraphIdentifiers(
             .distinctUntilChanged()
             .map { result ->
                 if (result == null) {
-                    val metadata = reportingV2Api.getReportingGraphs(null, null, null)
+                    val metadata = reportingApi.graphs(null, null)
                     var identifiers: List<String>? = null
                     graphMetadataCache.submitGraphMetadata(
                         metadata.map { reportingGraph ->

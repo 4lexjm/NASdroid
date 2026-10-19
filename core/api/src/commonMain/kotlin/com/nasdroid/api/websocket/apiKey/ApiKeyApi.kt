@@ -38,8 +38,9 @@ interface ApiKeyApi {
  *
  * @property id The unique identifier for the API Key.
  * @property name The name of the API Key.
+ * @property username The username associated with the API Key on TrueNAS 25.04+.
  * @property createdAt The timestamp when the API Key was created.
- * @property allowList The list of allowed methods and resources for this API Key.
+ * @property allowList The list of allowed methods and resources for this API Key (legacy TrueNAS).
  * @property key The actual API Key string. This should be kept secure.
  */
 @Serializable
@@ -48,13 +49,15 @@ data class ApiKey(
     val id: Int,
     @SerialName("name")
     val name: String,
+    @SerialName("username")
+    val username: String? = null,
     @SerialName("created_at")
     @Serializable(EDateInstantSerializer::class)
     val createdAt: Instant,
     @SerialName("allowlist")
-    val allowList: List<AllowedMethod>,
+    val allowList: List<AllowedMethod> = emptyList(),
     @SerialName("key")
-    val key: String,
+    val key: String = "",
 )
 
 /**
@@ -67,25 +70,28 @@ data class ApiKey(
 @Serializable
 data class UpdateApiKey(
     @SerialName("name")
-    val name: String?,
+    val name: String? = null,
     @SerialName("allowlist")
-    val allowList: List<AllowedMethod>?,
+    val allowList: List<AllowedMethod>? = null,
     @SerialName("reset")
-    val reset: Boolean?
+    val reset: Boolean? = null
 )
 
 /**
  * Describes a new API key to be created.
  *
  * @property name The name of the key. Must not exceed 200 characters.
- * @property allowList A list of [AllowedMethod]s that this API key should have access to.
+ * @property username The username of the account that owns the API key (required in TrueNAS 25.04+).
+ * @property allowList A list of [AllowedMethod]s that this API key should have access to (legacy TrueNAS).
  */
 @Serializable
 data class NewApiKey(
     @SerialName("name")
     val name: String,
     @SerialName("allowlist")
-    val allowList: List<AllowedMethod>
+    val allowList: List<AllowedMethod>? = null,
+    @SerialName("username")
+    val username: String? = null,
 )
 
 /**

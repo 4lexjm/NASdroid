@@ -20,7 +20,14 @@ data class NavigationMode(
  * All possible states for the apps primary mode of navigation.
  */
 enum class PrimaryNavigationMode {
+    /**
+     * Navigation is displayed inside a modal navigation drawer.
+     */
     Modal,
+
+    /**
+     * Navigation is displayed inside a permanent navigation drawer.
+     */
     Permanent
 }
 
@@ -28,8 +35,19 @@ enum class PrimaryNavigationMode {
  * All possible states for the apps secondary mode of navigation.
  */
 enum class SecondaryNavigationMode {
+    /**
+     * No secondary navigation component is visible.
+     */
     None,
+
+    /**
+     * Secondary navigation is displayed as a bottom navigation bar.
+     */
     Bar,
+
+    /**
+     * Secondary navigation is displayed as a side navigation rail.
+     */
     Rail
 }
 

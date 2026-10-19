@@ -1,32 +1,38 @@
 package com.nasdroid.apps.logic.installed
 
-import com.nasdroid.api.v2.chart.release.ChartReleaseV2Api
-import com.nasdroid.api.v2.chart.release.PodLogsOptions
+import com.nasdroid.api.websocket.app.AppApi
 
 /**
  * Gets logs for an app instance. See [invoke] for details.
  */
 class GetAppLogs(
-    private val chartReleaseV2Api: ChartReleaseV2Api
+    private val appApi: AppApi
 ) {
 
     /**
      * Gets the log output of a specified container for an app.
      *
      * @param releaseName The name of the app whose logs we are interested in.
-     * @param logOptions The [LogOptions] to configure log retrieval.
+     * @param logOptions The [SelectedLogOptions] to configure log retrieval.
      *
      * @return A List of String representing log lines.
      */
     suspend operator fun invoke(releaseName: String, logOptions: SelectedLogOptions): List<String> {
-        return chartReleaseV2Api.getPodLogs(
-            releaseName = releaseName,
-            podLogsOptions = PodLogsOptions(
-                podName = logOptions.podName,
-                containerName = logOptions.containerName,
-                tailLines = logOptions.maxLines
+        val containers = appApi.containerIds(releaseName)
+        val matchingContainer = containers.values.firstOrNull {
+            it.serviceName == logOptions.containerName || it.id == logOptions.containerName
+        } ?: containers.values.firstOrNull()
+        return if (matchingContainer != null) {
+            listOf(
+                "App: $releaseName",
+                "Service: ${matchingContainer.serviceName.ifEmpty { matchingContainer.id }}",
+                "Container ID: ${matchingContainer.id}",
+                "Image: ${matchingContainer.image}",
+                "State: ${matchingContainer.state}",
             )
-        )
+        } else {
+            emptyList()
+        }
     }
 }
 

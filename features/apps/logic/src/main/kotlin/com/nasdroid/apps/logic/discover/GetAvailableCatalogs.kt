@@ -1,13 +1,14 @@
 package com.nasdroid.apps.logic.discover
 
 import com.nasdroid.api.v2.exception.HttpNotOkException
-import com.nasdroid.api.v2.catalog.CatalogV2Api
+import com.nasdroid.api.websocket.catalog.CatalogApi
+import com.nasdroid.api.websocket.jsonrpc.MethodCallError
 
 /**
  * Retrieves a list of catalogs that are providing apps to the user. See [invoke] for details.
  */
 class GetAvailableCatalogs(
-    private val catalogV2Api: CatalogV2Api
+    private val catalogApi: CatalogApi
 ) {
 
     /**
@@ -15,9 +16,10 @@ class GetAvailableCatalogs(
      */
     suspend operator fun invoke(): Result<List<String>> {
         return try {
-            val categories = catalogV2Api.getCatalogs()
-                .map { it.label }
-            Result.success(categories)
+            val config = catalogApi.config()
+            Result.success(listOf(config.label))
+        } catch (e: MethodCallError) {
+            Result.failure(e)
         } catch (e: HttpNotOkException) {
             Result.failure(e)
         }

@@ -1,16 +1,18 @@
 package com.nasdroid.api.websocket.auth
 
+import com.nasdroid.api.websocket.ddp.EDateInstantSerializer
 import kotlinx.datetime.Instant
-import kotlinx.serialization.Contextual
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.JsonElement
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
 
 /**
- * Describes the TrueNAS API V2 "Auth" group. Note these mappings may not be 1:1, as we will
+ * Describes the TrueNAS API "Auth" group. Note these mappings may not be 1:1, as we will
  * rearrange data to be more accessible in Kotlin.
  */
+@Suppress("TooManyFunctions")
 interface AuthApi {
 
     /**
@@ -46,8 +48,11 @@ interface AuthApi {
 
     /**
      * Authenticate session using API key.
+     *
+     * @param apiKey The API key string.
+     * @param username Optional username associated with the API key for `auth.login_ex` (`API_KEY_PLAIN`).
      */
-    suspend fun logInWithApiKey(apiKey: String): Boolean
+    suspend fun logInWithApiKey(apiKey: String, username: String? = null): Boolean
 
     /**
      * Authenticate session using token generated with [generateToken].
@@ -95,33 +100,52 @@ interface AuthApi {
     suspend fun twoFactorAuth(username: String, password: String): Boolean
 }
 
+/**
+ * Details of the currently authenticated TrueNAS user returned by `auth.me`.
+ *
+ * @property name The username (`pw_name`).
+ * @property gecos The user full name or comment (`pw_gecos`).
+ * @property dir The user home directory (`pw_dir`).
+ * @property shell The user login shell (`pw_shell`).
+ * @property uid The numeric user ID (`pw_uid`).
+ * @property gid The numeric primary group ID (`pw_gid`).
+ * @property groupList List of supplementary group IDs (`grouplist`).
+ * @property sid Optional security identifier (`sid`).
+ * @property source The directory source of the user account.
+ * @property isLocal Whether the user is a local account (`local`).
+ * @property attributes Arbitrary user attributes map (`attributes`).
+ * @property twoFactorConfig Two-factor authentication configuration (`two_factor_config`).
+ */
 @Serializable
 data class AuthenticatedUser(
     @SerialName("pw_name")
     val name: String,
     @SerialName("pw_gecos")
-    val gecos: String,
+    val gecos: String = "",
     @SerialName("pw_dir")
-    val dir: String,
+    val dir: String = "",
     @SerialName("pw_shell")
-    val shell: String,
+    val shell: String = "",
     @SerialName("pw_uid")
-    val uid: String,
+    val uid: String = "",
     @SerialName("pw_gid")
-    val gid: String,
+    val gid: String = "",
     @SerialName("grouplist")
-    val groupList: List<String>,
+    val groupList: List<String> = emptyList(),
     @SerialName("sid")
-    val sid: String,
+    val sid: String? = null,
     @SerialName("source")
-    val source: Source,
+    val source: Source? = null,
     @SerialName("local")
-    val local: Boolean,
+    val isLocal: Boolean = true,
     @SerialName("attributes")
-    val attributes: Map<String, @Contextual Any>,
+    val attributes: Map<String, JsonElement> = emptyMap(),
     @SerialName("two_factor_config")
-    val twoFactorConfig: Map<String, String> // TODO unknown type
+    val twoFactorConfig: JsonElement? = null,
 ) {
+    /**
+     * Directory source of an authenticated user.
+     */
     @Serializable
     enum class Source {
         @SerialName("LOCAL")
@@ -133,23 +157,38 @@ data class AuthenticatedUser(
     }
 }
 
+/**
+ * Describes an active authentication session on the TrueNAS server.
+ *
+ * @property id The unique session identifier.
+ * @property isCurrent Whether this session is the caller's current session.
+ * @property isInternal Whether this session is internal to the system.
+ * @property origin The network origin of the session.
+ * @property credentials The type of credentials used to establish the session.
+ * @property credentialsData Additional metadata describing the credentials.
+ * @property createdAt The timestamp when the session was created.
+ */
 @Serializable
 data class Session(
     @SerialName("id")
     val id: String,
     @SerialName("current")
-    val current: Boolean,
+    val isCurrent: Boolean,
     @SerialName("internal")
-    val internal: Boolean,
+    val isInternal: Boolean,
     @SerialName("origin")
     val origin: String,
     @SerialName("credentials")
-    val credentials: CredentialType,
+    val credentials: CredentialType? = null,
     @SerialName("credentials_data")
-    val credentialsData: Map<String, String>,
+    val credentialsData: Map<String, JsonElement> = emptyMap(),
+    @Serializable(with = EDateInstantSerializer::class)
     @SerialName("created_at")
     val createdAt: Instant,
 ) {
+    /**
+     * Possible credential types for an active TrueNAS session.
+     */
     @Serializable
     enum class CredentialType {
         @SerialName("UNIX_SOCKET")

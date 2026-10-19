@@ -52,6 +52,7 @@ import org.koin.androidx.compose.koinViewModel
 /**
  * A screen that allows the user to quickly find and connect to their TrueNAS server.
  */
+@Suppress("LongMethod")
 @Composable
 fun RegisterServerScreen(
     onServerRegistered: () -> Unit,

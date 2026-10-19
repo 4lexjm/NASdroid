@@ -1,7 +1,8 @@
 package com.nasdroid.apps.logic.discover
 
 import com.nasdroid.api.v2.exception.ClientRequestException
-import com.nasdroid.api.v2.catalog.CatalogV2Api
+import com.nasdroid.api.websocket.catalog.CatalogApi
+import com.nasdroid.api.websocket.jsonrpc.MethodCallError
 import com.nasdroid.core.strongresult.StrongResult
 import kotlinx.datetime.Instant
 
@@ -10,7 +11,7 @@ import kotlinx.datetime.Instant
  * [invoke] for details.
  */
 class GetAvailableAppDetails(
-    private val catalogV2Api: CatalogV2Api,
+    private val catalogApi: CatalogApi,
     private val stripHtmlTags: StripHtmlTags
 ) {
 
@@ -22,16 +23,17 @@ class GetAvailableAppDetails(
      * @param catalog The catalog that the app belongs to.
      * @param train The train within the catalog that the app is available on.
      */
+    @Suppress("ReturnCount")
     suspend operator fun invoke(
         id: String,
         catalog: String,
         train: String
     ): StrongResult<AvailableAppDetails, AvailableAppDetailsError> {
         val catalogDetails = try {
-            catalogV2Api.getCatalogItemDetails(id, catalog, train)
+            catalogApi.getAppDetails(id, train)
+        } catch (_: MethodCallError) {
+            return StrongResult.failure(AvailableAppDetailsError.AppNotFound)
         } catch (_: ClientRequestException) {
-            // The API returns error 422 when it can't find an app, but also 422 for missing data.
-            // Let's assume we always send the data it needs.
             return StrongResult.failure(AvailableAppDetailsError.AppNotFound)
         }
         val details = AvailableAppDetails(
@@ -40,10 +42,10 @@ class GetAvailableAppDetails(
             name = catalogDetails.title,
             version = catalogDetails.latestAppVersion,
             tags = catalogDetails.tags,
-            homepage = catalogDetails.homeUrl,
-            description = stripHtmlTags(catalogDetails.appReadme),
-            screenshots = catalogDetails.screenshotUrls,
-            sources = catalogDetails.sourceUrls,
+            homepage = catalogDetails.home,
+            description = stripHtmlTags(catalogDetails.appReadme ?: catalogDetails.description),
+            screenshots = catalogDetails.screenshots,
+            sources = catalogDetails.sources,
             lastUpdatedAt = Instant.fromEpochMilliseconds(catalogDetails.lastUpdate),
             chartDetails = AvailableAppDetails.ChartDetails(
                 catalog = catalog,
@@ -52,7 +54,7 @@ class GetAvailableAppDetails(
                 maintainers = catalogDetails.maintainers.map {
                     AvailableAppDetails.ChartDetails.Maintainer(
                         name = it.name,
-                        url = it.url,
+                        url = it.url.orEmpty(),
                         email = it.email
                     )
                 }

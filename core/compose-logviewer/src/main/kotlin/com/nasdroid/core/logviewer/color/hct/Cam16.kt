@@ -78,6 +78,9 @@ class Cam16
     private val bstar: Double
 ) {
 
+    /**
+     * Conversion utilities and transformation matrices for [Cam16].
+     */
     companion object {
         // Transforms XYZ color space coordinates to 'cone'/'RGB' responses in CAM16.
         val XYZ_TO_CAM16RGB = arrayOf(
