@@ -20,7 +20,7 @@ class DdpReportingApi(private val client: DdpWebsocketClient) : ReportingApi {
     override suspend fun getData(
         graphs: List<RequestedGraph>,
         aggregate: Boolean
-    ): GraphData {
+    ): List<GraphData> {
         return client.callMethod(
             method = "reporting.get_data",
             params = listOf(
@@ -35,7 +35,7 @@ class DdpReportingApi(private val client: DdpWebsocketClient) : ReportingApi {
         unit: GraphUnit,
         page: Int,
         aggregate: Boolean
-    ): GraphData {
+    ): List<GraphData> {
         return client.callMethod(
             method = "reporting.get_data",
             params = listOf(
@@ -50,7 +50,7 @@ class DdpReportingApi(private val client: DdpWebsocketClient) : ReportingApi {
         start: Instant,
         end: Instant,
         aggregate: Boolean
-    ): GraphData {
+    ): List<GraphData> {
         return client.callMethod(
             method = "reporting.get_data",
             params = listOf(
@@ -58,8 +58,8 @@ class DdpReportingApi(private val client: DdpWebsocketClient) : ReportingApi {
                 GraphDataArgs.QueryParams(
                     unit = null,
                     page = null,
-                    start = start.toEpochMilliseconds(),
-                    end = end.toEpochMilliseconds(),
+                    start = start.epochSeconds,
+                    end = end.epochSeconds,
                     aggregate = aggregate
                 )
             )
@@ -69,7 +69,7 @@ class DdpReportingApi(private val client: DdpWebsocketClient) : ReportingApi {
     override suspend fun graph(
         name: String,
         aggregate: Boolean
-    ): GraphData {
+    ): List<GraphData> {
         return client.callMethod(
             method = "reporting.graph",
             params = listOf(
@@ -84,7 +84,7 @@ class DdpReportingApi(private val client: DdpWebsocketClient) : ReportingApi {
         unit: GraphUnit,
         page: Int,
         aggregate: Boolean
-    ): GraphData {
+    ): List<GraphData> {
         return client.callMethod(
             method = "reporting.graph",
             params = listOf(
@@ -99,7 +99,7 @@ class DdpReportingApi(private val client: DdpWebsocketClient) : ReportingApi {
         start: Instant,
         end: Instant,
         aggregate: Boolean
-    ): GraphData {
+    ): List<GraphData> {
         return client.callMethod(
             method = "reporting.graph",
             params = listOf(
@@ -107,8 +107,8 @@ class DdpReportingApi(private val client: DdpWebsocketClient) : ReportingApi {
                 GraphArgs.QueryParams(
                     unit = null,
                     page = null,
-                    start = start.toEpochMilliseconds(),
-                    end = end.toEpochMilliseconds(),
+                    start = start.epochSeconds,
+                    end = end.epochSeconds,
                     aggregate = aggregate
                 )
             )
@@ -116,12 +116,15 @@ class DdpReportingApi(private val client: DdpWebsocketClient) : ReportingApi {
     }
 
     override suspend fun graphs(
-        limit: Int,
-        offset: Int
+        limit: Int?,
+        offset: Int?
     ): List<Graph> {
         return client.callMethod(
             method = "reporting.graphs",
-            params = listOf(GraphsArgs.QueryFilters(emptyList()), GraphsArgs.PagingData(limit, offset))
+            params = listOf(
+                GraphsArgs.QueryFilters(emptyList()),
+                GraphsArgs.PagingData(limit = limit ?: 0, offset = offset ?: 0)
+            )
         )
     }
 

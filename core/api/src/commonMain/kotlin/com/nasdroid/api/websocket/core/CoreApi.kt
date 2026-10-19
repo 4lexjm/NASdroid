@@ -1,97 +1,51 @@
 package com.nasdroid.api.websocket.core
 
-import com.nasdroid.api.v2.core.CoreV2Api
 import com.nasdroid.api.websocket.ddp.EDateInstantSerializer
 import kotlinx.datetime.Instant
-import kotlinx.serialization.Contextual
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonElement
 
+/**
+ * Describes the TrueNAS API "core" group.
+ */
+@Suppress("TooManyFunctions")
 interface CoreApi {
 
     /**
-     * https://en.wikipedia.org/wiki/Address_Resolution_Protocol.
+     * Resolves IPv4/IPv6 Neighbor/ARP table entries.
      */
     suspend fun arp(ip: String? = null, networkInterface: String? = null): Map<String, String>
-
-    // TODO we need a way to map args to arbitrary types here before exposing bulk
-//    /**
-//     * Will sequentially call method with arguments from the params list. For example, running
-//     *
-//     * ```
-//     * call("core.bulk", "zfs.snapshot.delete", [["tank@snap-1", true], ["tank@snap-2", false]])
-//     * ```
-//     *
-//     * will call
-//     *
-//     * ```
-//     * call("zfs.snapshot.delete", "tank@snap-1", true)
-//     * call("zfs.snapshot.delete", "tank@snap-2", false)
-//     * ```
-//     *
-//     * If the first call fails and the seconds succeeds (returning true), the result of the overall call will be:
-//     *
-//     * ```
-//     * [
-//     *     {"result": null, "error": "Error deleting snapshot"},
-//     *     {"result": true, "error": null}
-//     * ]
-//     * ```
-//     *
-//     * Important note: the execution status of core.bulk will always be a SUCCESS (unless an
-//     * unlikely internal error occurs). Caller must check for individual call results to ensure the
-//     * absence of any call errors.
-//     */
-//    suspend fun bulk(method: String, params: List<List<String>>): Int
 
     /**
      * Setup middlewared for remote debugging.
      *
-     * engine currently used: - REMOTE_PDB: Remote vanilla PDB (over TCP sockets)
-     *
-     * @param bindAddress: local ip address to bind the remote debug session to
-     * @param bindPort: local port to listen on
-     * @param threaded: run debugger in a new thread instead of the main event loop
+     * @param bindAddress local ip address to bind the remote debug session to.
+     * @param bindPort local port to listen on.
+     * @param threaded run debugger in a new thread instead of the main event loop.
      */
     suspend fun debug(bindAddress: String = "0.0.0.0", bindPort: Int = 3000, threaded: Boolean = false)
 
     /**
-     * -
+     * Returns whether middlewared is in debug mode.
      */
     suspend fun debugModeEnabled(): Boolean
-
-    // TODO We don't know how download actually works
-//    /**
-//     * Core helper to call a job marked for download.
-//     *
-//     * Non-buffered downloads will allow job to write to pipe as soon as download URL is requested,
-//     * job will stay blocked meanwhile. buffered downloads must wait for job to complete before
-//     * requesting download URL, job's pipe output will be buffered to ramfs.
-//     *
-//     * Returns the job id and the URL for download.
-//     */
-//    suspend fun download(method: String, args: List<String>, fileName: String, buffered: Boolean = false)
 
     /**
      * Get information about long-running jobs. If authenticated session does not have the
      * FULL_ADMIN role, only jobs owned by the current authenticated session will be returned.
      */
-    suspend fun getJobs(): List<Job<Any>>
+    suspend fun getJobs(): List<Job>
+
+    /**
+     * Get information about a specific long-running job by its [jobId].
+     */
+    suspend fun getJob(jobId: Int): Job
 
     /**
      * Aborts the job with the given ID.
      */
     suspend fun jobAbort(jobId: Int)
-
-    // TODO We don't know how download actually works
-//    /**
-//     * Download logs of the job id.
-//     *
-//     * Please see [download] method documentation for explanation on filename and buffered
-//     * arguments, and return value.
-//     */
-//    suspend fun jobDownloadLogs(jobId: Int, fileName: String?, buffered: Boolean = false)
 
     /**
      * Starts a new Job that waits for the specified job to complete.
@@ -108,6 +62,7 @@ interface CoreApi {
      * Method that will send an ICMP echo request to "hostname" and will wait up to "timeout" for a
      * reply.
      */
+    @Suppress("LongParameterList")
     suspend fun pingRemote(
         hostName: String,
         type: PingType = PingType.ICMP,
@@ -133,6 +88,15 @@ interface CoreApi {
     suspend fun setDebugMode(debugMode: Boolean)
 }
 
+/**
+ * Describes an open WebSocket session on the TrueNAS server.
+ *
+ * @property id Unique session ID.
+ * @property socketFamily Socket family string.
+ * @property address Client address.
+ * @property isAuthenticated Whether the session is authenticated.
+ * @property callCount Number of RPC calls executed on this session.
+ */
 @Serializable
 data class Session(
     @SerialName("id")
@@ -142,11 +106,14 @@ data class Session(
     @SerialName("address")
     val address: String,
     @SerialName("authenticated")
-    val authenticated: Boolean,
+    val isAuthenticated: Boolean,
     @SerialName("call_count")
     val callCount: Int
 )
 
+/**
+ * ICMP ping protocol types.
+ */
 @Serializable
 enum class PingType {
     @SerialName("ICMP")
@@ -160,56 +127,55 @@ enum class PingType {
 /**
  * Contains information about a single job on the system.
  *
- * @param T The type of result expected from the job.
  * @property id The job ID.
  * @property method The method this job called.
  * @property arguments A list of arguments the method was called with.
- * @property transient TODO
+ * @property isTransient Whether the job is transient.
  * @property description A human-readable description of the job.
- * @property abortable Whether the job can be aborted. See [CoreV2Api.abortJob].
- * @property logsPath TODO
- * @property logsExcerpt TODO
+ * @property isAbortable Whether the job can be aborted.
+ * @property logsPath Filesystem path to the job logs, if any.
+ * @property logsExcerpt Excerpt of the job logs, if any.
  * @property progress Information about the jobs current progress.
  * @property result The result of the job, or null if there is no result.
- * @property resultEncodingError TODO
+ * @property resultEncodingError Any encoding error encountered when serializing the result.
  * @property error A human-readable error message, if any.
  * @property exception The exception that occurred when the job failed.
- * @property excInfo TODO
+ * @property excInfo Structured exception info if the job failed.
  * @property state The state of the job.
  * @property timeStarted The timestamp of when this job was started.
  * @property timeFinished The timestamp of when this job finished, if any.
  * @property credentials The credentials of the user that initiated the job.
  */
 @Serializable
-data class Job<T>(
+data class Job(
     @SerialName("id")
     val id: Int,
     @SerialName("method")
     val method: String,
     @SerialName("arguments")
-    val arguments: List<JsonElement>, // TODO Serializer
+    val arguments: List<JsonElement> = emptyList(),
     @SerialName("transient")
-    val transient: Boolean,
+    val isTransient: Boolean = false,
     @SerialName("description")
-    val description: String?,
+    val description: String? = null,
     @SerialName("abortable")
-    val abortable: Boolean,
+    val isAbortable: Boolean = false,
     @SerialName("logs_path")
-    val logsPath: String?,
+    val logsPath: String? = null,
     @SerialName("logs_excerpt")
-    val logsExcerpt: String?,
+    val logsExcerpt: String? = null,
     @SerialName("progress")
     val progress: Progress,
     @SerialName("result")
-    val result: T?,
+    val result: JsonElement? = null,
     @SerialName("result_encoding_error")
-    val resultEncodingError: String?,
+    val resultEncodingError: String? = null,
     @SerialName("error")
-    val error: String?,
+    val error: String? = null,
     @SerialName("exception")
-    val exception: String?,
+    val exception: String? = null,
     @SerialName("exc_info")
-    val excInfo: JobExcInfo?,
+    val excInfo: JobExcInfo? = null,
     @SerialName("state")
     val state: State,
     @Serializable(with = EDateInstantSerializer::class)
@@ -217,34 +183,40 @@ data class Job<T>(
     val timeStarted: Instant,
     @Serializable(with = EDateInstantSerializer::class)
     @SerialName("time_finished")
-    val timeFinished: Instant?,
+    val timeFinished: Instant? = null,
     @SerialName("credentials")
-    val credentials: Credentials?
+    val credentials: Credentials? = null
 ) {
 
+    /**
+     * Credentials metadata for the user who started a job.
+     *
+     * @property type Credential type identifier.
+     * @property data Additional credential metadata.
+     */
     @Serializable
     data class Credentials(
         @SerialName("type")
         val type: String,
         @SerialName("data")
-        val data: Map<String, String>
+        val data: Map<String, JsonElement> = emptyMap()
     )
+
     /**
      * Describes the current progress of a running job.
      *
-     * @property percent The percentage of work completed. Between 0 and 100.
+     * @property percent The percentage of work completed. Between 0 and 100, or null.
      * @property description A description for the job progress.
-     * @property extra TODO
+     * @property extra Extra progress payload.
      */
     @Serializable
     data class Progress(
         @SerialName("percent")
-        val percent: Int,
+        val percent: Double? = null,
         @SerialName("description")
-        val description: String,
-        @Contextual
+        val description: String? = null,
         @SerialName("extra")
-        val extra: Any?
+        val extra: JsonElement? = null
     )
 
     /**
@@ -252,14 +224,20 @@ data class Job<T>(
      */
     @Serializable
     enum class State {
+        @SerialName("WAITING")
+        Waiting,
+        @SerialName("RUNNING")
+        Running,
         @SerialName("SUCCESS")
         Success,
         @SerialName("FAILED")
         Failed,
+        @SerialName("ABORTED")
+        Aborted,
         @SerialName("starting")
         Starting,
         @SerialName("running")
-        Running,
+        LegacyRunning,
         @SerialName("exited")
         Exited,
         @SerialName("DEPLOYING")
@@ -268,19 +246,18 @@ data class Job<T>(
 }
 
 /**
- * TODO What is this?
+ * Structured exception information for a failed [Job].
  *
- * @property repr TODO
- * @property type TODO
- * @property extra TODO
+ * @property repr String representation of the exception.
+ * @property type Exception class/type name.
+ * @property extra Additional structured error details.
  */
 @Serializable
 data class JobExcInfo(
     @SerialName("repr")
-    val repr: String?,
+    val repr: String? = null,
     @SerialName("type")
-    val type: String?,
-    @Contextual
+    val type: String? = null,
     @SerialName("extra")
-    val extra: Any?
+    val extra: JsonElement? = null
 )

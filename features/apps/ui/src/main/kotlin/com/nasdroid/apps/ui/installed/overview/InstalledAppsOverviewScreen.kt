@@ -48,6 +48,7 @@ import kotlin.time.Duration.Companion.milliseconds
 /**
  * A screen for displaying apps installed on the system.
  */
+@Suppress("LongMethod")
 @Composable
 fun InstalledAppsOverviewScreen(
     onAppClick: (appName: String) -> Unit,

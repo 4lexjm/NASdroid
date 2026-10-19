@@ -1,15 +1,15 @@
 package com.nasdroid.apps.logic.installed
 
 import com.nasdroid.api.v2.exception.HttpNotOkException
-import com.nasdroid.api.v2.chart.release.ChartReleaseV2Api
-import com.nasdroid.api.v2.chart.release.RollbackOptions
+import com.nasdroid.api.websocket.app.AppApi
+import com.nasdroid.api.websocket.jsonrpc.MethodCallError
 import com.nasdroid.apps.data.installed.InstalledAppCache
 
 /**
  * Reverts an app to a previous version. See [invoke] for details.
  */
 class RollbackApp(
-    private val chartReleaseV2Api: ChartReleaseV2Api,
+    private val appApi: AppApi,
     private val installedAppCache: InstalledAppCache,
 ) {
 
@@ -23,12 +23,10 @@ class RollbackApp(
         rollbackSnapshots: Boolean
     ): Result<Unit> {
         return try {
-            chartReleaseV2Api.rollbackRelease(
-                releaseName = appName,
-                options = RollbackOptions(
-                    itemVersion = targetVersion,
-                    rollbackSnapshot = rollbackSnapshots
-                )
+            appApi.rollback(
+                appName = appName,
+                appVersion = targetVersion,
+                rollbackSnapshot = rollbackSnapshots
             )
             installedAppCache.setAppVersion(
                 appName = appName,
@@ -36,6 +34,8 @@ class RollbackApp(
                 updateAvailable = true // We assume there will be an update available after downgrading
             )
             Result.success(Unit)
+        } catch (e: MethodCallError) {
+            Result.failure(e)
         } catch (e: HttpNotOkException) {
             Result.failure(e)
         }

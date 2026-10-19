@@ -1,20 +1,22 @@
 package com.nasdroid.storage.logic.pool.import
 
-import com.nasdroid.api.v2.core.CoreV2Api
-import com.nasdroid.api.v2.core.Job
-import com.nasdroid.api.v2.pool.ImportablePool
-import com.nasdroid.api.v2.pool.PoolV2Api
+import com.nasdroid.api.websocket.core.CoreApi
+import com.nasdroid.api.websocket.core.Job
+import com.nasdroid.api.websocket.jsonrpc.JsonRpcSerializer
+import com.nasdroid.api.websocket.pool.ImportablePool
+import com.nasdroid.api.websocket.pool.PoolApi
 import com.nasdroid.core.strongresult.StrongResult
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.withTimeout
+import kotlinx.serialization.builtins.ListSerializer
 import kotlin.time.Duration.Companion.seconds
 
 /**
  * Retrieves a list of pools that can be imported. See [invoke] for details.
  */
 class GetImportablePools(
-    private val coreV2Api: CoreV2Api,
-    private val poolV2Api: PoolV2Api
+    private val coreApi: CoreApi,
+    private val poolApi: PoolApi
 ) {
 
     /**
@@ -22,21 +24,29 @@ class GetImportablePools(
      * occurs. Note this is a potentially long-running action.
      */
     suspend operator fun invoke(): StrongResult<List<ImportablePool>, GetImportablePoolsError> {
-        val jobId = poolV2Api.findPoolsToImport()
-        var job = coreV2Api.getJobList(jobId, ImportablePool::class)
+        val jobId = poolApi.findPoolsToImport()
+        var job = coreApi.getJob(jobId)
         withTimeout(Timeout) {
-            while (job.state != Job.State.Success) {
+            while (job.state == Job.State.Waiting || job.state == Job.State.Running) {
                 delay(1.seconds)
-                job = coreV2Api.getJobList(jobId, ImportablePool::class)
+                job = coreApi.getJob(jobId)
             }
         }
-        return if (job.state != Job.State.Success) {
+        val result = job.result
+        return if (job.state != Job.State.Success || result == null) {
             StrongResult.failure(GetImportablePoolsError.Timeout)
         } else {
-            StrongResult.success(job.result!!)
+            val pools = JsonRpcSerializer.decodeFromJsonElement(
+                ListSerializer(ImportablePool.serializer()),
+                result
+            )
+            StrongResult.success(pools)
         }
     }
 
+    /**
+     * Constants for [GetImportablePools].
+     */
     companion object {
         private val Timeout = 30.seconds
     }
@@ -46,5 +56,9 @@ class GetImportablePools(
  * Encapsulates all possible failures when retrieving importable pools.
  */
 enum class GetImportablePoolsError {
+    /**
+     * The operation timed out waiting for the job to complete.
+     */
     Timeout
 }
+

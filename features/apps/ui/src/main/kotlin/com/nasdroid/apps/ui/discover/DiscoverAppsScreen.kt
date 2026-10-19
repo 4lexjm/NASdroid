@@ -44,6 +44,7 @@ import org.koin.androidx.compose.koinViewModel
 /**
  * A screen that allows the user to find and install new apps on their system.
  */
+@Suppress("LongMethod")
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DiscoverAppsScreen(

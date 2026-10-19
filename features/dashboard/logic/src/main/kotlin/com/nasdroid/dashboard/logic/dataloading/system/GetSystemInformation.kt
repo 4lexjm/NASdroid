@@ -1,8 +1,8 @@
 package com.nasdroid.dashboard.logic.dataloading.system
 
 import com.nasdroid.api.v2.exception.HttpNotOkException
-import com.nasdroid.api.v2.system.SystemV2Api
-import kotlinx.datetime.Instant
+import com.nasdroid.api.websocket.jsonrpc.MethodCallError
+import com.nasdroid.api.websocket.system.SystemApi
 import kotlinx.datetime.LocalDateTime
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
@@ -11,7 +11,7 @@ import kotlinx.datetime.toLocalDateTime
  * Retrieves basic information about the state of the system. See [invoke] for details.
  */
 class GetSystemInformation(
-    private val systemV2Api: SystemV2Api
+    private val systemApi: SystemApi
 ) {
 
     /**
@@ -20,15 +20,17 @@ class GetSystemInformation(
      */
     suspend operator fun invoke(): Result<SystemInformation> {
         return try {
-            val systemInformation = systemV2Api.getSystemInfo()
+            val systemInformation = systemApi.info()
             Result.success(
                 SystemInformation(
                     version = systemInformation.version,
                     hostname = systemInformation.hostName,
-                    lastBootTime = Instant.fromEpochMilliseconds(systemInformation.bootTime)
+                    lastBootTime = systemInformation.bootTime
                         .toLocalDateTime(TimeZone.currentSystemDefault())
                 )
             )
+        } catch (e: MethodCallError) {
+            Result.failure(e)
         } catch (e: HttpNotOkException) {
             Result.failure(e)
         }

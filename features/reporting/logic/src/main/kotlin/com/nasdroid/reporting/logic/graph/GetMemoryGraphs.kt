@@ -1,8 +1,8 @@
 package com.nasdroid.reporting.logic.graph
 
-import com.nasdroid.api.v2.reporting.ReportingV2Api
-import com.nasdroid.api.v2.reporting.RequestedGraph
-import com.nasdroid.api.v2.reporting.Units
+import com.nasdroid.api.websocket.reporting.GraphUnit
+import com.nasdroid.api.websocket.reporting.ReportingApi
+import com.nasdroid.api.websocket.reporting.RequestedGraph
 import com.nasdroid.core.strongresult.StrongResult
 import com.nasdroid.reporting.logic.graph.CapacityGraph.Companion.toCapacityGraph
 import kotlinx.coroutines.CoroutineDispatcher
@@ -12,7 +12,7 @@ import kotlinx.coroutines.withContext
  * Retrieves the data needed to display all memory-related graphs. See [invoke] for details.
  */
 class GetMemoryGraphs(
-    private val reportingV2Api: ReportingV2Api,
+    private val reportingApi: ReportingApi,
     private val calculationDispatcher: CoroutineDispatcher,
 ) {
 
@@ -26,31 +26,29 @@ class GetMemoryGraphs(
     suspend operator fun invoke(
         timeframe: GraphTimeframe = GraphTimeframe.Hour
     ): StrongResult<List<Graph<*>>, ReportingGraphError> = withContext(calculationDispatcher) {
-            try {
-                val reportingData = reportingV2Api.getGraphData(
-                    graphs = listOf(
-                        RequestedGraph("memory", null),
-                        RequestedGraph("swap", null),
-                    ),
-                    unit = when (timeframe) {
-                        GraphTimeframe.Hour -> Units.HOUR
-                        GraphTimeframe.Day -> Units.DAY
-                        GraphTimeframe.Week -> Units.WEEK
-                        GraphTimeframe.Month -> Units.MONTH
-                        GraphTimeframe.Year -> Units.YEAR
-                    },
-                    page = 1
-                )
-                val (memoryGraph, swapGraph) = reportingData
+        try {
+            val reportingData = reportingApi.getData(
+                graphs = listOf(
+                    RequestedGraph(RequestedGraph.GraphName.MemoryUsage, null),
+                    RequestedGraph(RequestedGraph.GraphName.Swap, null),
+                ),
+                unit = when (timeframe) {
+                    GraphTimeframe.Hour -> GraphUnit.Hour
+                    GraphTimeframe.Day -> GraphUnit.Day
+                    GraphTimeframe.Week -> GraphUnit.Week
+                    GraphTimeframe.Month -> GraphUnit.Month
+                    GraphTimeframe.Year -> GraphUnit.Year
+                },
+                page = 1
+            )
 
-                return@withContext StrongResult.success(
-                    listOf(
-                        memoryGraph.toCapacityGraph(),
-                        swapGraph.toCapacityGraph(),
-                    )
-                )
-            } catch (_: IllegalArgumentException) {
-                return@withContext StrongResult.failure(ReportingGraphError.InvalidGraphData)
-            }
+            return@withContext StrongResult.success(
+                reportingData.map { graph ->
+                    graph.toCapacityGraph()
+                }
+            )
+        } catch (_: IllegalArgumentException) {
+            return@withContext StrongResult.failure(ReportingGraphError.InvalidGraphData)
         }
+    }
 }

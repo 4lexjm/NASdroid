@@ -1,8 +1,8 @@
 package com.nasdroid.dashboard.logic.dataloading.network
 
 import com.nasdroid.api.v2.exception.HttpNotOkException
-import com.nasdroid.api.v2.reporting.ReportingGraphData
-import com.nasdroid.api.v2.reporting.ReportingV2Api
+import com.nasdroid.api.websocket.reporting.GraphData
+import com.nasdroid.api.websocket.reporting.ReportingApi
 import io.mockk.coEvery
 import io.mockk.mockk
 import kotlinx.coroutines.test.runTest
@@ -14,7 +14,7 @@ import kotlin.test.assertTrue
 
 class GetNetworkUsageDataTest {
 
-    private lateinit var mockReportingApi: ReportingV2Api
+    private lateinit var mockReportingApi: ReportingApi
 
     private lateinit var getNetworkUsageData: GetNetworkUsageData
 
@@ -28,7 +28,7 @@ class GetNetworkUsageDataTest {
     @Test
     fun `when api throws, error is returned`() = runTest {
         coEvery {
-            mockReportingApi.getGraphData(graphs = any(), start = any(), end = any())
+            mockReportingApi.getData(graphs = any(), start = any(), end = any())
         } throws HttpNotOkException(418, "I'm a teapot")
 
         val result = getNetworkUsageData(listOf("eno1", "eno2"))
@@ -43,7 +43,7 @@ class GetNetworkUsageDataTest {
     @Test
     fun `when api returns data, data is returned`() = runTest {
         coEvery {
-            mockReportingApi.getGraphData(graphs = any(), start = any(), end = any())
+            mockReportingApi.getData(graphs = any(), start = any(), end = any())
         } returns realNetworkData
 
         val result = getNetworkUsageData(listOf("eno1", "eno2"))
@@ -70,7 +70,7 @@ class GetNetworkUsageDataTest {
 
     companion object {
         private val realNetworkData = listOf(
-            ReportingGraphData(
+            GraphData(
                 name = "interface",
                 identifier = "eno1",
                 data = listOf(
@@ -95,7 +95,7 @@ class GetNetworkUsageDataTest {
                 ),
                 aggregations = null
             ),
-            ReportingGraphData(
+            GraphData(
                 name = "interface",
                 identifier = "eno2",
                 data = listOf(

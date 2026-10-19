@@ -1,21 +1,24 @@
 package com.nasdroid.apps.logic.installed
 
-import com.nasdroid.api.v2.chart.release.ChartReleaseV2Api
+import com.nasdroid.api.websocket.app.AppApi
 
 /**
  * Retrieve all pods and containers that logs can be exported from. See [invoke] for details.
  */
 class GetLogOptions(
-    private val chartReleaseV2Api: ChartReleaseV2Api
+    private val appApi: AppApi
 ) {
 
     /**
      * Gets all available log options for the given release name.
      */
     suspend operator fun invoke(releaseName: String): LogOptions {
-        val availableOptions = chartReleaseV2Api.getPodLogChoices(releaseName)
+        val containers = appApi.containerIds(releaseName)
+        val containerNames = containers.values
+            .map { it.serviceName.ifEmpty { it.id } }
+            .ifEmpty { listOf(releaseName) }
         return LogOptions(
-            podsAndCharts = availableOptions
+            podsAndCharts = mapOf(releaseName to containerNames)
         )
     }
 }

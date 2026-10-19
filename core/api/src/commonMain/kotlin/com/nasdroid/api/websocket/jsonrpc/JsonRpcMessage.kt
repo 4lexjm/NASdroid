@@ -86,9 +86,12 @@ data class ResponseError(
      */
     @Serializable
     data class Error(
+        @SerialName("code")
         val code: Int,
+        @SerialName("message")
         val message: String,
-        val data: JsonElement?
+        @SerialName("data")
+        val data: JsonElement? = null,
     )
 }
 
@@ -117,7 +120,30 @@ data class Notification(
     @SerialName("params")
     val params: JsonObject,
     @SerialName("jsonrpc")
-    val jsonRpcVersion: String,
+    val jsonRpcVersion: String = "2.0",
+)
+
+/**
+ * Describes the parameters of a TrueNAS `collection_update` JSON-RPC notification.
+ *
+ * @property msg The update message type (e.g., `added`, `changed`, `removed`, `ready`, `nosub`).
+ * @property collection The name of the subscribed collection.
+ * @property id The optional identifier of the updated document.
+ * @property fields The payload fields of the event.
+ * @property extra Optional extra metadata associated with the event.
+ */
+@Serializable
+data class CollectionUpdateParams(
+    @SerialName("msg")
+    val msg: String? = null,
+    @SerialName("collection")
+    val collection: String,
+    @SerialName("id")
+    val id: JsonElement? = null,
+    @SerialName("fields")
+    val fields: JsonElement? = null,
+    @SerialName("extra")
+    val extra: JsonElement? = null,
 )
 
 internal class RpcResponseSerializer(

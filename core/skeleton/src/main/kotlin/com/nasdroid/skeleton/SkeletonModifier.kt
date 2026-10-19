@@ -1,3 +1,5 @@
+@file:Suppress("ForbiddenImport", "MaxLineLength")
+
 package com.nasdroid.skeleton
 
 import androidx.compose.material3.MaterialTheme

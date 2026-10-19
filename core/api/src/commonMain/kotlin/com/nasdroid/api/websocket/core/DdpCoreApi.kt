@@ -25,8 +25,12 @@ class DdpCoreApi(private val client: DdpWebsocketClient) : CoreApi {
         return client.callMethod("core.debug_mode_enabled")
     }
 
-    override suspend fun getJobs(): List<Job<Any>> {
+    override suspend fun getJobs(): List<Job> {
         return client.callMethod("core.get_jobs")
+    }
+
+    override suspend fun getJob(jobId: Int): Job {
+        return getJobs().first { it.id == jobId }
     }
 
     override suspend fun jobAbort(jobId: Int) {

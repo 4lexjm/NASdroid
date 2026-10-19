@@ -46,6 +46,9 @@ class Hct private constructor(argb: Int) {
         tone = lstarFromArgb(argb)
     }
 
+    /**
+     * Factory methods for creating [Hct] color instances.
+     */
     companion object {
         /**
          * Create an HCT color from hue, chroma, and tone.

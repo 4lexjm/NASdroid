@@ -2,7 +2,8 @@ package com.nasdroid.auth.logic.manageservers
 
 import com.nasdroid.api.v2.exception.ClientUnauthorizedException
 import com.nasdroid.api.websocket.auth.AuthApi
-import com.nasdroid.api.websocket.ddp.DdpWebsocketClient
+import com.nasdroid.api.websocket.jsonrpc.JsonRpcWebsocketClient
+import com.nasdroid.api.websocket.jsonrpc.MethodCallError
 import com.nasdroid.api.websocket.system.SystemApi
 import com.nasdroid.auth.data.Server
 import com.nasdroid.auth.data.serverstore.AuthenticatedServersStore
@@ -22,7 +23,7 @@ class AddNewServer(
     private val createApiKey: CreateApiKey,
     private val deriveUriFromInput: DeriveUriFromInput,
     private val authenticatedServersStore: AuthenticatedServersStore,
-    private val client: DdpWebsocketClient,
+    private val client: JsonRpcWebsocketClient,
     private val authApi: AuthApi,
     private val systemApi: SystemApi,
 ) {
@@ -50,7 +51,7 @@ class AddNewServer(
             if (authApi.logIn(username, password)) {
                 // Successful login
                 if (createApiKey) {
-                    this.createApiKey("NASdroid").fold(
+                    this.createApiKey("NASdroid", username = username).fold(
                         onSuccess = { key ->
                             storeNewServer(
                                 serverName = serverName,
@@ -76,7 +77,11 @@ class AddNewServer(
             } else {
                 StrongResult.failure(AddServerError.InvalidCredentials)
             }
+        } catch (_: MethodCallError) {
+            StrongResult.failure(AddServerError.InvalidCredentials)
         } catch (_: UnknownHostException) {
+            StrongResult.failure(AddServerError.ServerNotFound)
+        } catch (_: IllegalStateException) {
             StrongResult.failure(AddServerError.ServerNotFound)
         } finally {
             client.disconnect()
@@ -108,6 +113,10 @@ class AddNewServer(
             } else {
                 StrongResult.failure(AddServerError.InvalidCredentials)
             }
+        } catch (_: MethodCallError) {
+            StrongResult.failure(AddServerError.InvalidCredentials)
+        } catch (_: UnknownHostException) {
+            StrongResult.failure(AddServerError.ServerNotFound)
         } catch (_: IllegalStateException) {
             StrongResult.failure(AddServerError.ServerNotFound)
         } finally {
@@ -131,6 +140,8 @@ class AddNewServer(
                 authentication
             )
             StrongResult.success(Unit)
+        } catch (_: MethodCallError) {
+            StrongResult.failure(AddServerError.InvalidCredentials)
         } catch (_: ClientUnauthorizedException) {
             StrongResult.failure(AddServerError.InvalidCredentials)
         } catch (_: UnknownHostException) {
@@ -145,7 +156,7 @@ class AddNewServer(
 sealed interface AddServerError {
 
     /**
-     * Indicates that a server could not be found at the address provided. THis could be caused by
+     * Indicates that a server could not be found at the address provided. This could be caused by
      * an incorrect address, or no internet.
      */
     data object ServerNotFound : AddServerError

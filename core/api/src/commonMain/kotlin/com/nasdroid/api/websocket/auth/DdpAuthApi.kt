@@ -34,8 +34,8 @@ class DdpAuthApi(private val client: DdpWebsocketClient) : AuthApi {
         return client.callMethod("auth.login", listOf(username, password, otpToken))
     }
 
-    override suspend fun logInWithApiKey(apiKey: String): Boolean {
-        return client.callMethod("auth.login_with_api_key", listOf(apiKey),)
+    override suspend fun logInWithApiKey(apiKey: String, username: String?): Boolean {
+        return client.callMethod("auth.login_with_api_key", listOf(apiKey))
     }
 
     override suspend fun logInWithToken(token: String): Boolean {

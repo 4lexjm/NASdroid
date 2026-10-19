@@ -1,8 +1,8 @@
 package com.nasdroid.reporting.logic.graph
 
-import com.nasdroid.api.v2.reporting.ReportingV2Api
-import com.nasdroid.api.v2.reporting.RequestedGraph
-import com.nasdroid.api.v2.reporting.Units
+import com.nasdroid.api.websocket.reporting.GraphUnit
+import com.nasdroid.api.websocket.reporting.ReportingApi
+import com.nasdroid.api.websocket.reporting.RequestedGraph
 import com.nasdroid.core.strongresult.StrongResult
 import com.nasdroid.reporting.logic.graph.DurationGraph.Companion.toDurationGraph
 import com.nasdroid.reporting.logic.graph.FloatGraph.Companion.toFloatGraph
@@ -13,7 +13,7 @@ import kotlinx.coroutines.withContext
  * Retrieves the data needed to display all system-related graphs. See [invoke] for details.
  */
 class GetSystemGraphs(
-    private val reportingV2Api: ReportingV2Api,
+    private val reportingApi: ReportingApi,
     private val calculationDispatcher: CoroutineDispatcher,
 ) {
 
@@ -27,31 +27,33 @@ class GetSystemGraphs(
     suspend operator fun invoke(
         timeframe: GraphTimeframe = GraphTimeframe.Hour
     ): StrongResult<List<Graph<*>>, ReportingGraphError> = withContext(calculationDispatcher) {
-            try {
-                val reportingData = reportingV2Api.getGraphData(
-                    graphs = listOf(
-                        RequestedGraph("processes", null),
-                        RequestedGraph("uptime", null),
-                    ),
-                    unit = when (timeframe) {
-                        GraphTimeframe.Hour -> Units.HOUR
-                        GraphTimeframe.Day -> Units.DAY
-                        GraphTimeframe.Week -> Units.WEEK
-                        GraphTimeframe.Month -> Units.MONTH
-                        GraphTimeframe.Year -> Units.YEAR
-                    },
-                    page = 1
-                )
-                val (processesGraph, uptimeGraph) = reportingData
+        try {
+            val reportingData = reportingApi.getData(
+                graphs = listOf(
+                    RequestedGraph(RequestedGraph.GraphName.ActiveProcesses, null),
+                    RequestedGraph(RequestedGraph.GraphName.Uptime, null),
+                ),
+                unit = when (timeframe) {
+                    GraphTimeframe.Hour -> GraphUnit.Hour
+                    GraphTimeframe.Day -> GraphUnit.Day
+                    GraphTimeframe.Week -> GraphUnit.Week
+                    GraphTimeframe.Month -> GraphUnit.Month
+                    GraphTimeframe.Year -> GraphUnit.Year
+                },
+                page = 1
+            )
 
-                return@withContext StrongResult.success(
-                    listOf(
-                        processesGraph.toFloatGraph("Processes"),
-                        uptimeGraph.toDurationGraph()
-                    )
-                )
-            } catch (_: IllegalArgumentException) {
-                return@withContext StrongResult.failure(ReportingGraphError.InvalidGraphData)
-            }
+            return@withContext StrongResult.success(
+                reportingData.map { graph ->
+                    when (graph.name) {
+                        "processes" -> graph.toFloatGraph("Processes")
+                        "uptime" -> graph.toDurationGraph()
+                        else -> graph.toFloatGraph(graph.name)
+                    }
+                }
+            )
+        } catch (_: IllegalArgumentException) {
+            return@withContext StrongResult.failure(ReportingGraphError.InvalidGraphData)
         }
+    }
 }

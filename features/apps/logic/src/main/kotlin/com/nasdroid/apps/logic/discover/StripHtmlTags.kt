@@ -11,7 +11,7 @@ class StripHtmlTags {
      */
     operator fun invoke(text: String): String {
         return text
-            .replace(Regex("<h[1-6]>.*</h[16]>"), "") // Remove headers
+            .replace(Regex("<h[1-6]>.*</h[1-6]>"), "") // Remove headers
             .replace(Regex("<[^>]*>"), "") // Remove HTML tags
             .trim() // Remove any leading/trailing whitespace
     }

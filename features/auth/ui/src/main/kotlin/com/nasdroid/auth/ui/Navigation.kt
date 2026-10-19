@@ -20,24 +20,24 @@ fun NavGraphBuilder.authNavigation(
     modifier: Modifier = Modifier,
 ) {
     navigation(
-        startDestination = "picker",
+        startDestination = PICKER_ROUTE,
         route = route
     ) {
-        composable("picker") {
+        composable(PICKER_ROUTE) {
             SelectServerScreen(
                 onLoginSuccess = onLoginSuccess,
                 onAddServer = {
-                    navController.navigate("addServer")
+                    navController.navigate(ADD_SERVER_ROUTE)
                 },
                 modifier = modifier,
                 windowSizeClass = windowSizeClass,
             )
         }
-        composable("addServer") {
+        composable(ADD_SERVER_ROUTE) {
             RegisterServerScreen(
                 onServerRegistered = {
-                    navController.navigate("picker") {
-                        popUpTo("picker")
+                    navController.navigate(PICKER_ROUTE) {
+                        popUpTo(PICKER_ROUTE)
                     }
                 },
                 onNavigateBack = { navController.popBackStack() },
@@ -47,3 +47,7 @@ fun NavGraphBuilder.authNavigation(
         }
     }
 }
+
+private const val PICKER_ROUTE = "picker"
+private const val ADD_SERVER_ROUTE = "addServer"
+

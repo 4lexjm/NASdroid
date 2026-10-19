@@ -48,7 +48,7 @@ kotlin {
             implementation(libs.ktor.client.websockets)
             implementation(libs.ktor.client.websockets.serialization)
 
-            implementation(libs.kotlinx.serialization.json)
+            api(libs.kotlinx.serialization.json)
 
             implementation(libs.koin.core)
         }

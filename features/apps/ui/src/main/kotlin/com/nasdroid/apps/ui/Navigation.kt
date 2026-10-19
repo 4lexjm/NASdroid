@@ -15,6 +15,7 @@ import com.nasdroid.apps.ui.installed.overview.logs.LogsScreen
 /**
  * Registers a nested navigation graph for the Apps feature.
  */
+@Suppress("LongMethod")
 fun NavGraphBuilder.appsGraph(
     navController: NavController,
     route: String,

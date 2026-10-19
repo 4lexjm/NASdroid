@@ -144,47 +144,56 @@ internal fun AdapterInfo(
             modifier = Modifier.skeleton(adapterConfig == null)
         )
         if (adapterUtilisation != null) {
-            val chartModel = remember(adapterUtilisation) {
-                CartesianChartModel(
-                    ColumnCartesianLayerModel(
-                        listOf(
-                            listOf(
-                                ColumnCartesianLayerModel.Entry(
-                                    x = adapterUtilisation.sentBits.bytes.toDouble(CapacityUnit.MEGABYTE),
-                                    y = 0
-                                ),
-                                ColumnCartesianLayerModel.Entry(
-                                    x = adapterUtilisation.receivedBits.bytes.toDouble(CapacityUnit.MEGABYTE),
-                                    y = 1
-                                )
-                            )
+            AdapterChart(adapterUtilisation)
+        }
+    }
+}
+
+@Composable
+private fun AdapterChart(
+    adapterUtilisation: NetworkUsageData.AdapterUtilisation,
+    modifier: Modifier = Modifier,
+) {
+    val chartModel = remember(adapterUtilisation) {
+        CartesianChartModel(
+            ColumnCartesianLayerModel(
+                listOf(
+                    listOf(
+                        ColumnCartesianLayerModel.Entry(
+                            x = adapterUtilisation.sentBits.bytes.toDouble(CapacityUnit.MEGABYTE),
+                            y = 0
+                        ),
+                        ColumnCartesianLayerModel.Entry(
+                            x = adapterUtilisation.receivedBits.bytes.toDouble(CapacityUnit.MEGABYTE),
+                            y = 1
                         )
                     )
                 )
-            }
-            ProvideVicoTheme(rememberM3VicoTheme()) {
-                val context = LocalContext.current
-                CartesianChartHost(
-                    chart = rememberCartesianChart(
-                        rememberColumnCartesianLayer(),
-                        startAxis = VerticalAxis.rememberStart(
-                            title = stringResource(R.string.network_data_rate_unit),
-                            titleComponent = rememberTextComponent(color = LocalContentColor.current)
-                        ),
-                        bottomAxis = HorizontalAxis.rememberBottom(
-                            valueFormatter = { _, value, _ ->
-                                if (value == 0.0) {
-                                    context.getString(R.string.network_outgoing_label)
-                                } else {
-                                    context.getString(R.string.network_incoming_label)
-                                }
-                            }
-                        )
-                    ),
-                    model = chartModel,
+            )
+        )
+    }
+    ProvideVicoTheme(rememberM3VicoTheme()) {
+        val context = LocalContext.current
+        CartesianChartHost(
+            chart = rememberCartesianChart(
+                rememberColumnCartesianLayer(),
+                startAxis = VerticalAxis.rememberStart(
+                    title = stringResource(R.string.network_data_rate_unit),
+                    titleComponent = rememberTextComponent(color = LocalContentColor.current)
+                ),
+                bottomAxis = HorizontalAxis.rememberBottom(
+                    valueFormatter = { _, value, _ ->
+                        if (value == 0.0) {
+                            context.getString(R.string.network_outgoing_label)
+                        } else {
+                            context.getString(R.string.network_incoming_label)
+                        }
+                    }
                 )
-            }
-        }
+            ),
+            model = chartModel,
+            modifier = modifier,
+        )
     }
 }
 

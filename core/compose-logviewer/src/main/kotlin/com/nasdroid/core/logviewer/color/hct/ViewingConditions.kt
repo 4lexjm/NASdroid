@@ -34,6 +34,9 @@ class ViewingConditions
     val z: Double
 ) {
 
+    /**
+     * Default viewing condition presets and factory helpers.
+     */
     companion object {
         /** sRGB-like viewing conditions.  */
         val DEFAULT = defaultWithBackgroundLstar(50.0)

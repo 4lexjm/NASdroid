@@ -157,8 +157,19 @@ internal fun RebootConfirmationDialog(
  * Encapsulates all possible confirmation dialog types for [PowerOptionsPicker].
  */
 enum class ConfirmationDialogType {
+    /**
+     * No confirmation dialog is displayed.
+     */
     None,
+
+    /**
+     * Confirmation dialog for rebooting the system.
+     */
     Reboot,
+
+    /**
+     * Confirmation dialog for shutting down the system.
+     */
     Shutdown
 }
 

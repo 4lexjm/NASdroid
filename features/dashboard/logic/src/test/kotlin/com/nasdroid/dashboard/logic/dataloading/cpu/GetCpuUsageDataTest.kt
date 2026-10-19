@@ -1,8 +1,8 @@
 package com.nasdroid.dashboard.logic.dataloading.cpu
 
 import com.nasdroid.api.v2.exception.ServerResponseException
-import com.nasdroid.api.v2.reporting.ReportingGraphData
-import com.nasdroid.api.v2.reporting.ReportingV2Api
+import com.nasdroid.api.websocket.reporting.GraphData
+import com.nasdroid.api.websocket.reporting.ReportingApi
 import io.mockk.coEvery
 import io.mockk.mockk
 import kotlinx.coroutines.test.runTest
@@ -13,7 +13,7 @@ import kotlin.test.assertTrue
 
 class GetCpuUsageDataTest {
 
-    private lateinit var mockReportingApi: ReportingV2Api
+    private lateinit var mockReportingApi: ReportingApi
 
     private lateinit var getCpuUsageData: GetCpuUsageData
 
@@ -27,7 +27,7 @@ class GetCpuUsageDataTest {
     @Test
     fun `when reporting throws, error is returned`() = runTest {
         coEvery {
-            mockReportingApi.getGraphData(graphs = any(), start = any(), end = any())
+            mockReportingApi.getData(graphs = any(), start = any(), end = any())
         } throws ServerResponseException(500, "Internal server error")
 
         val result = getCpuUsageData()
@@ -41,7 +41,7 @@ class GetCpuUsageDataTest {
 
     @Test
     fun `when reporting returns data, usage data is returned`() = runTest {
-        coEvery { mockReportingApi.getGraphData(graphs = any(), start = any(), end = any()) } returns listOf(
+        coEvery { mockReportingApi.getData(graphs = any(), start = any(), end = any()) } returns listOf(
             realCpuData,
             realTemperatureData
         )
@@ -59,7 +59,7 @@ class GetCpuUsageDataTest {
     }
 
     companion object {
-        private val realCpuData = ReportingGraphData(
+        private val realCpuData = GraphData(
             name = "cpu",
             identifier = null,
             data = listOf(
@@ -97,7 +97,7 @@ class GetCpuUsageDataTest {
             aggregations = null,
         )
 
-        private val realTemperatureData =  ReportingGraphData(
+        private val realTemperatureData = GraphData(
             name = "cputemp",
             identifier = null,
             data = listOf(

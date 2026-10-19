@@ -159,6 +159,7 @@ fun InstalledAppDetailsScreen(
 /**
  * Displays the contents of [InstalledAppDetailsScreen], when there are app details to display.
  */
+@Suppress("LongMethod")
 @Composable
 fun InstalledAppDetailsContent(
     installedAppDetails: InstalledAppDetails,

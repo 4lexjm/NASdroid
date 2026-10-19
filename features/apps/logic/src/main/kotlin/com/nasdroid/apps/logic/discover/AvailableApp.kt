@@ -26,8 +26,11 @@ data class AvailableApp(
     val isInstalled: Boolean,
     val lastUpdated: Instant,
 ) {
+    /**
+     * Mapping helpers for [AvailableApp].
+     */
     companion object {
-        internal fun com.nasdroid.api.v2.app.AvailableApp.toSanitizedModel(): AvailableApp {
+        internal fun com.nasdroid.api.websocket.app.AvailableApp.toSanitizedModel(): AvailableApp {
             return AvailableApp(
                 id = name,
                 title = title,

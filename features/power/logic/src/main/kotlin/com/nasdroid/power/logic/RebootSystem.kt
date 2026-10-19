@@ -2,23 +2,30 @@ package com.nasdroid.power.logic
 
 import com.nasdroid.api.v2.exception.ClientUnauthorizedException
 import com.nasdroid.api.v2.exception.HttpNotOkException
-import com.nasdroid.api.v2.system.SystemV2Api
+import com.nasdroid.api.websocket.jsonrpc.MethodCallError
+import com.nasdroid.api.websocket.system.SystemApi
 import com.nasdroid.core.strongresult.StrongResult
 
 /**
  * Reboots the system. See [invoke] for details.
  */
 class RebootSystem(
-    private val systemV2Api: SystemV2Api
+    private val systemApi: SystemApi
 ) {
     /**
      * Reboots the system, and suspends until the task completes. This task can fail, see
      * [RebootError] for detailed failure modes.
      */
-    suspend operator fun invoke(): StrongResult<Unit, RebootError> {
+    suspend operator fun invoke(reason: String = "Requested from NASdroid"): StrongResult<Unit, RebootError> {
         return try {
-            systemV2Api.reboot()
+            systemApi.reboot(reason = reason)
             StrongResult.success(Unit)
+        } catch (e: MethodCallError) {
+            if (e.message?.contains("Not authenticated", ignoreCase = true) == true) {
+                StrongResult.failure(RebootError.Unauthorized)
+            } else {
+                StrongResult.failure(RebootError.GenericNetworkError(e.errorCode, e.message.orEmpty()))
+            }
         } catch (_: ClientUnauthorizedException) {
             StrongResult.failure(RebootError.Unauthorized)
         } catch (e: HttpNotOkException) {
@@ -47,5 +54,5 @@ sealed interface RebootError {
     data class GenericNetworkError(
         val httpResponseCode: Int,
         val httpResponseDescription: String,
-    ): RebootError
+    ) : RebootError
 }

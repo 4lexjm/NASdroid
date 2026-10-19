@@ -147,6 +147,9 @@ sealed interface AuthData {
         val isCreateApiKey: Boolean
     ): AuthData
 
+    /**
+     * State saving utilities for [AuthData].
+     */
     companion object {
         /**
          * A simple state saver for [AuthData]. This should be used in tandem with

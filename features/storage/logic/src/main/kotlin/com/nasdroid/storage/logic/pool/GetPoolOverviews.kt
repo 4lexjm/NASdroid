@@ -4,15 +4,16 @@ import com.boswelja.capacity.Capacity
 import com.boswelja.capacity.Capacity.Companion.bytes
 import com.boswelja.capacity.Capacity.Companion.gigabytes
 import com.nasdroid.api.v2.exception.HttpNotOkException
-import com.nasdroid.api.v2.pool.Pool
-import com.nasdroid.api.v2.pool.PoolStatus
-import com.nasdroid.api.v2.pool.PoolV2Api
+import com.nasdroid.api.websocket.jsonrpc.MethodCallError
+import com.nasdroid.api.websocket.pool.Pool
+import com.nasdroid.api.websocket.pool.PoolApi
+import com.nasdroid.api.websocket.pool.PoolStatus
 
 /**
  * Gets a list of all pools and their status. See [invoke] for details.
  */
 class GetPoolOverviews(
-    private val poolV2Api: PoolV2Api
+    private val poolApi: PoolApi
 ) {
 
     /**
@@ -20,13 +21,13 @@ class GetPoolOverviews(
      */
     suspend operator fun invoke(): Result<List<PoolOverview>> {
         return try {
-            val pools = poolV2Api.getPools()
+            val pools = poolApi.getPools()
             val result = pools.map { pool ->
                 PoolOverview(
                     id = pool.id,
                     poolName = pool.name,
-                    totalCapacity = pool.size!!.bytes,
-                    usedCapacity = pool.allocated!!.bytes,
+                    totalCapacity = (pool.size ?: 0L).bytes,
+                    usedCapacity = (pool.allocated ?: 0L).bytes,
                     topologyHealth = pool.calculateTopologyHealth(),
                     usageHealth = pool.calculateUsageHealth(),
                     zfsHealth = PoolOverview.ZfsHealth.Healthy, // TODO
@@ -34,6 +35,8 @@ class GetPoolOverviews(
                 )
             }
             Result.success(result)
+        } catch (e: MethodCallError) {
+            Result.failure(e)
         } catch (e: HttpNotOkException) {
             Result.failure(e)
         }
@@ -46,7 +49,11 @@ class GetPoolOverviews(
             when (it.status) {
                 PoolStatus.Online -> { /* no-op */ }
                 PoolStatus.Degraded -> degradedVdevs++
-                PoolStatus.Offline -> offlineVdevs++
+                PoolStatus.Offline,
+                PoolStatus.Faulted,
+                PoolStatus.Removed,
+                PoolStatus.Unavail,
+                PoolStatus.Unknown -> offlineVdevs++
             }
         }
         return if (offlineVdevs > 0) {
@@ -106,7 +113,7 @@ data class PoolOverview(
         /**
          * Some VDEVs are degraded, but the pool is still operational. See [degradedVdevs] for a count.
          */
-        data class Degraded(val degradedVdevs: Int): TopologyHealth
+        data class Degraded(val degradedVdevs: Int) : TopologyHealth
 
         /**
          * Some VDEVs are degraded, causing the pool to be inaccessible.
@@ -118,8 +125,19 @@ data class PoolOverview(
      * Encapsulates all pool usage health descriptors.
      */
     enum class UsageHealth {
+        /**
+         * Pool has adequate free space.
+         */
         Healthy,
+
+        /**
+         * Pool is running low on free space.
+         */
         LowFreeSpace,
+
+        /**
+         * Pool is completely full.
+         */
         Full
     }
 
@@ -127,6 +145,9 @@ data class PoolOverview(
      * Encapsulates all ZFS health descriptors.
      */
     enum class ZfsHealth {
+        /**
+         * ZFS status is healthy.
+         */
         Healthy
         // TODO
     }
@@ -135,6 +156,9 @@ data class PoolOverview(
      * Encapsulates the overall health of all disks in a pool.
      */
     enum class DisksHealth {
+        /**
+         * All disks in the pool are healthy.
+         */
         Healthy
         // TODO
     }

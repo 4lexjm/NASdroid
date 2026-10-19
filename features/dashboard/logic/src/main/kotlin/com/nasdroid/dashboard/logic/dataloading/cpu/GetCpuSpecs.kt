@@ -1,13 +1,14 @@
 package com.nasdroid.dashboard.logic.dataloading.cpu
 
 import com.nasdroid.api.v2.exception.HttpNotOkException
-import com.nasdroid.api.v2.system.SystemV2Api
+import com.nasdroid.api.websocket.jsonrpc.MethodCallError
+import com.nasdroid.api.websocket.system.SystemApi
 
 /**
  * Retrieves specifications for the CPU(s) installed in the system. See [invoke] for details.
  */
 class GetCpuSpecs(
-    private val systemV2Api: SystemV2Api,
+    private val systemApi: SystemApi,
 ) {
 
     /**
@@ -15,14 +16,16 @@ class GetCpuSpecs(
      */
     suspend operator fun invoke(): Result<CpuSpecs> {
         return try {
-            val systemInformation = systemV2Api.getSystemInfo()
+            val systemInformation = systemApi.info()
             Result.success(
-                    CpuSpecs(
+                CpuSpecs(
                     model = systemInformation.cpuModel,
                     physicalCores = systemInformation.physicalCores,
                     totalCores = systemInformation.cores,
                 )
             )
+        } catch (e: MethodCallError) {
+            Result.failure(e)
         } catch (e: HttpNotOkException) {
             Result.failure(e)
         }

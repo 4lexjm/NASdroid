@@ -1,8 +1,8 @@
 package com.nasdroid.reporting.logic.graph
 
-import com.nasdroid.api.v2.reporting.ReportingV2Api
-import com.nasdroid.api.v2.reporting.RequestedGraph
-import com.nasdroid.api.v2.reporting.Units
+import com.nasdroid.api.websocket.reporting.GraphUnit
+import com.nasdroid.api.websocket.reporting.ReportingApi
+import com.nasdroid.api.websocket.reporting.RequestedGraph
 import com.nasdroid.core.strongresult.StrongResult
 import com.nasdroid.reporting.logic.graph.CapacityGraph.Companion.toCapacityGraph
 import com.nasdroid.reporting.logic.graph.FloatGraph.Companion.toFloatGraph
@@ -14,7 +14,7 @@ import kotlinx.coroutines.withContext
  * Retrieves the data needed to display all ZFS-related graphs. See [invoke] for details.
  */
 class GetZfsGraphs(
-    private val reportingV2Api: ReportingV2Api,
+    private val reportingApi: ReportingApi,
     private val calculationDispatcher: CoroutineDispatcher,
 ) {
 
@@ -24,44 +24,38 @@ class GetZfsGraphs(
      *
      * @param timeframe The frame of time for which the graph data is returned for.
      */
-    @Suppress("DestructuringDeclarationWithTooManyEntries") // This is intentional here
     suspend operator fun invoke(
         timeframe: GraphTimeframe = GraphTimeframe.Hour
     ): StrongResult<List<Graph<*>>, ReportingGraphError> = withContext(calculationDispatcher) {
         try {
-            val reportingData = reportingV2Api.getGraphData(
+            val reportingData = reportingApi.getData(
                 graphs = listOf(
-                    RequestedGraph("arcactualrate", null),
-                    RequestedGraph("arcrate", null),
-                    RequestedGraph("arcsize", null),
-                    RequestedGraph("arcresult", "demand_data"),
-                    RequestedGraph("arcresult", "prefetch_data")
+                    RequestedGraph(RequestedGraph.GraphName.ArcActualRate, null),
+                    RequestedGraph(RequestedGraph.GraphName.ArcRate, null),
+                    RequestedGraph(RequestedGraph.GraphName.ArcSize, null),
+                    RequestedGraph(RequestedGraph.GraphName.ArcResult, "demand_data"),
+                    RequestedGraph(RequestedGraph.GraphName.ArcResult, "prefetch_data")
                 ),
                 unit = when (timeframe) {
-                    GraphTimeframe.Hour -> Units.HOUR
-                    GraphTimeframe.Day -> Units.DAY
-                    GraphTimeframe.Week -> Units.WEEK
-                    GraphTimeframe.Month -> Units.MONTH
-                    GraphTimeframe.Year -> Units.YEAR
+                    GraphTimeframe.Hour -> GraphUnit.Hour
+                    GraphTimeframe.Day -> GraphUnit.Day
+                    GraphTimeframe.Week -> GraphUnit.Week
+                    GraphTimeframe.Month -> GraphUnit.Month
+                    GraphTimeframe.Year -> GraphUnit.Year
                 },
                 page = 1
             )
-            val (
-                cacheHitRateGraph,
-                arcHitRateGraph,
-                arcSizeGraph,
-                arcResultDemandGraph,
-                arcResultPrefetchGraph
-            ) = reportingData
 
             return@withContext StrongResult.success(
-                listOf(
-                    cacheHitRateGraph.toFloatGraph("Events/s"),
-                    arcHitRateGraph.toFloatGraph("Events/s"),
-                    arcSizeGraph.toCapacityGraph(),
-                    arcResultDemandGraph.toPercentageGraph(),
-                    arcResultPrefetchGraph.toPercentageGraph()
-                )
+                reportingData.map { graph ->
+                    when (graph.name) {
+                        "arcactualrate",
+                        "arcrate" -> graph.toFloatGraph("Events/s")
+                        "arcsize" -> graph.toCapacityGraph()
+                        "arcresult" -> graph.toPercentageGraph()
+                        else -> graph.toFloatGraph(graph.name)
+                    }
+                }
             )
         } catch (_: IllegalArgumentException) {
             return@withContext StrongResult.failure(ReportingGraphError.InvalidGraphData)

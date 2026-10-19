@@ -10,6 +10,7 @@ import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.encoding.Encoder
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.JsonTransformingSerializer
 
 /**
@@ -21,6 +22,12 @@ class EDateMillisSerializer : JsonTransformingSerializer<Long>(Long.serializer()
     override fun transformDeserialize(element: JsonElement): JsonElement {
         if (element is JsonObject && element.contains("\$date")) {
             return element.getValue("\$date")
+        }
+        if (element is JsonPrimitive && element.isString) {
+            val parsedMillis = parseDateStringToMillis(element.content)
+            if (parsedMillis != null) {
+                return JsonPrimitive(parsedMillis)
+            }
         }
         return super.transformDeserialize(element)
     }
@@ -42,6 +49,12 @@ class EDateInstantSerializer : JsonTransformingSerializer<Instant>(InstantEpochM
         if (element is JsonObject && element.contains("\$date")) {
             return element.getValue("\$date")
         }
+        if (element is JsonPrimitive && element.isString) {
+            val parsedMillis = parseDateStringToMillis(element.content)
+            if (parsedMillis != null) {
+                return JsonPrimitive(parsedMillis)
+            }
+        }
         return super.transformDeserialize(element)
     }
 
@@ -50,6 +63,23 @@ class EDateInstantSerializer : JsonTransformingSerializer<Instant>(InstantEpochM
             mapOf("\$date" to element)
         )
     }
+}
+
+private fun parseDateStringToMillis(raw: String): Long? {
+    val trimmed = raw.trim()
+    if (trimmed.isEmpty()) {
+        return null
+    }
+    return runCatching { Instant.parse(trimmed).toEpochMilliseconds() }.getOrNull()
+        ?: runCatching {
+            val normalized = trimmed.replace(' ', 'T')
+            val withZone = if (normalized.endsWith("Z") || normalized.contains('+')) {
+                normalized
+            } else {
+                "${normalized}Z"
+            }
+            Instant.parse(withZone).toEpochMilliseconds()
+        }.getOrNull()
 }
 
 internal object InstantEpochMillisSerializer : KSerializer<Instant> {

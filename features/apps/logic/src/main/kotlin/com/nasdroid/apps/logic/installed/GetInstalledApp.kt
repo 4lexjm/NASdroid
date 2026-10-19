@@ -1,15 +1,16 @@
 package com.nasdroid.apps.logic.installed
 
 import com.nasdroid.api.v2.exception.HttpNotOkException
-import com.nasdroid.api.v2.chart.release.ChartRelease
-import com.nasdroid.api.v2.chart.release.ChartReleaseV2Api
+import com.nasdroid.api.websocket.app.AppApi
+import com.nasdroid.api.websocket.app.InstalledApp
+import com.nasdroid.api.websocket.jsonrpc.MethodCallError
 import kotlinx.datetime.Instant
 
 /**
  * Retrieves details about a single app installed on the system. See [invoke] for details.
  */
 class GetInstalledApp(
-    private val chartReleaseV2Api: ChartReleaseV2Api
+    private val appApi: AppApi
 ) {
 
     /**
@@ -17,28 +18,33 @@ class GetInstalledApp(
      */
     suspend operator fun invoke(appName: String): Result<InstalledAppDetails> {
         return try {
-            val chartRelease = chartReleaseV2Api.getChartRelease(appName)
+            val installedApp = appApi.getInstance(appName)
             Result.success(
                 InstalledAppDetails(
-                    name = chartRelease.id,
-                    iconUrl = chartRelease.chartMetadata.icon,
-                    notes = chartRelease.info.notes,
-                    appVersion = chartRelease.chartMetadata.appVersion,
-                    chartVersion = chartRelease.chartMetadata.version,
+                    name = installedApp.id,
+                    iconUrl = installedApp.metadata.icon.orEmpty(),
+                    notes = installedApp.notes,
+                    appVersion = installedApp.metadata.appVersion.ifEmpty { installedApp.humanVersion },
+                    chartVersion = installedApp.metadata.version.ifEmpty { installedApp.version },
                     lastUpdated = null, // TODO
-                    sources = chartRelease.chartMetadata.sources.orEmpty(),
-                    developer = null, // TODO
-                    catalog = chartRelease.catalog,
-                    train = chartRelease.catalogTrain,
-                    state = when (chartRelease.status) {
-                        ChartRelease.Status.DEPLOYING -> InstalledAppDetails.State.DEPLOYING
-                        ChartRelease.Status.ACTIVE -> InstalledAppDetails.State.ACTIVE
-                        ChartRelease.Status.STOPPED -> InstalledAppDetails.State.STOPPED
+                    sources = installedApp.metadata.sources,
+                    developer = installedApp.metadata.maintainers.firstOrNull()?.name,
+                    catalog = "TRUENAS",
+                    train = installedApp.metadata.train,
+                    state = when (installedApp.state) {
+                        InstalledApp.State.DEPLOYING,
+                        InstalledApp.State.STOPPING -> InstalledAppDetails.State.DEPLOYING
+                        InstalledApp.State.RUNNING -> InstalledAppDetails.State.ACTIVE
+                        InstalledApp.State.STOPPED,
+                        InstalledApp.State.CRASHED,
+                        InstalledApp.State.ERROR -> InstalledAppDetails.State.STOPPED
                     },
-                    hasUpdateAvailable = chartRelease.updateAvailable,
-                    webPortalUrl = chartRelease.portals?.webPortal?.firstOrNull()
+                    hasUpdateAvailable = installedApp.upgradeAvailable || installedApp.imageUpdatesAvailable,
+                    webPortalUrl = installedApp.portals.values.firstOrNull()
                 )
             )
+        } catch (e: MethodCallError) {
+            Result.failure(e)
         } catch (e: HttpNotOkException) {
             Result.failure(e)
         }
@@ -81,8 +87,19 @@ data class InstalledAppDetails(
      * Possible states an application may be in.
      */
     enum class State {
+        /**
+         * The app is deploying or updating.
+         */
         DEPLOYING,
+
+        /**
+         * The app is running.
+         */
         ACTIVE,
+
+        /**
+         * The app is stopped.
+         */
         STOPPED
     }
 }

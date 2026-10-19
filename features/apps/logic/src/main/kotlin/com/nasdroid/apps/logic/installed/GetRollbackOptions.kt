@@ -1,25 +1,23 @@
 package com.nasdroid.apps.logic.installed
 
-import com.nasdroid.api.v2.chart.release.ChartReleaseV2Api
+import com.nasdroid.api.websocket.app.AppApi
 
 /**
  * Gets the available rollback configuration for an application installed on the system. See
  * [invoke] for details.
  */
 class GetRollbackOptions(
-    private val chartReleaseV2Api: ChartReleaseV2Api
-){
+    private val appApi: AppApi
+) {
 
     /**
      * Gets a [RollbackOptions] for the installed application with the given name.
      */
     suspend operator fun invoke(appName: String): RollbackOptions {
-        val result = chartReleaseV2Api.getChartRelease(appName, true)
-        val availableVersions = result.history.orEmpty().keys
+        val availableVersions = appApi.rollbackVersions(appName)
         return RollbackOptions(
             canRollBack = availableVersions.isNotEmpty(),
-            availableVersions = availableVersions
-                .sortedDescending()
+            availableVersions = availableVersions.sortedDescending()
         )
     }
 }

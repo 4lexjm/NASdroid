@@ -61,53 +61,58 @@ fun PoolCard(
                 totalBytes = pool.totalCapacity.toLong(CapacityUnit.BYTE),
                 modifier = Modifier.fillMaxWidth()
             )
-            PoolHealthItem(
-                label = { Text(stringResource(R.string.topology_health_title)) },
-                status = {
-                    when (val health = pool.topologyHealth) {
-                        is PoolOverview.TopologyHealth.Degraded -> {
-                            Text(stringResource(R.string.zfs_health_status_degraded_disks, health.degradedVdevs))
-                        }
-                        PoolOverview.TopologyHealth.Healthy -> {
-                            Text(stringResource(R.string.health_status_healthy))
-                        }
-                        PoolOverview.TopologyHealth.Offline -> {
-                            Text(stringResource(R.string.zfs_health_status_offline))
-                        }
-                    }
-                },
-                healthy = pool.topologyHealth == PoolOverview.TopologyHealth.Healthy,
-            )
-            PoolHealthItem(
-                label = { Text(stringResource(R.string.disks_health_title)) },
-                status = {
-                    when (pool.disksHealth) {
-                        PoolOverview.DisksHealth.Healthy -> {
-                            Text(stringResource(R.string.health_status_healthy))
-                        }
-                    }
-                },
-                healthy = pool.disksHealth == PoolOverview.DisksHealth.Healthy,
-            )
-            PoolHealthItem(
-                label = { Text(stringResource(R.string.disks_health_title)) },
-                status = {
-                    when (pool.usageHealth) {
-                        PoolOverview.UsageHealth.Healthy -> {
-                            Text(stringResource(R.string.health_status_healthy))
-                        }
-                        PoolOverview.UsageHealth.LowFreeSpace -> {
-                            Text(stringResource(R.string.usage_health_status_low_space))
-                        }
-                        PoolOverview.UsageHealth.Full -> {
-                            Text(stringResource(R.string.usage_health_status_no_space))
-                        }
-                    }
-                },
-                healthy = pool.usageHealth == PoolOverview.UsageHealth.Healthy,
-            )
+            PoolHealthSummary(pool = pool)
         }
     }
+}
+
+@Composable
+private fun PoolHealthSummary(pool: PoolOverview) {
+    PoolHealthItem(
+        label = { Text(stringResource(R.string.topology_health_title)) },
+        status = {
+            when (val health = pool.topologyHealth) {
+                is PoolOverview.TopologyHealth.Degraded -> {
+                    Text(stringResource(R.string.zfs_health_status_degraded_disks, health.degradedVdevs))
+                }
+                PoolOverview.TopologyHealth.Healthy -> {
+                    Text(stringResource(R.string.health_status_healthy))
+                }
+                PoolOverview.TopologyHealth.Offline -> {
+                    Text(stringResource(R.string.zfs_health_status_offline))
+                }
+            }
+        },
+        healthy = pool.topologyHealth == PoolOverview.TopologyHealth.Healthy,
+    )
+    PoolHealthItem(
+        label = { Text(stringResource(R.string.disks_health_title)) },
+        status = {
+            when (pool.disksHealth) {
+                PoolOverview.DisksHealth.Healthy -> {
+                    Text(stringResource(R.string.health_status_healthy))
+                }
+            }
+        },
+        healthy = pool.disksHealth == PoolOverview.DisksHealth.Healthy,
+    )
+    PoolHealthItem(
+        label = { Text(stringResource(R.string.disks_health_title)) },
+        status = {
+            when (pool.usageHealth) {
+                PoolOverview.UsageHealth.Healthy -> {
+                    Text(stringResource(R.string.health_status_healthy))
+                }
+                PoolOverview.UsageHealth.LowFreeSpace -> {
+                    Text(stringResource(R.string.usage_health_status_low_space))
+                }
+                PoolOverview.UsageHealth.Full -> {
+                    Text(stringResource(R.string.usage_health_status_no_space))
+                }
+            }
+        },
+        healthy = pool.usageHealth == PoolOverview.UsageHealth.Healthy,
+    )
 }
 
 /**

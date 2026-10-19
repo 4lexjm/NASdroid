@@ -2,7 +2,7 @@ package com.nasdroid.reporting.logic.graph
 
 import com.boswelja.capacity.Capacity.Companion.mebibytes
 import com.boswelja.percentage.Percentage.Companion.percent
-import com.nasdroid.api.v2.reporting.ReportingV2Api
+import com.nasdroid.api.websocket.reporting.ReportingApi
 import com.nasdroid.core.strongresult.StrongResult
 import com.nasdroid.reporting.logic.DEFAULT_VALID_DATA
 import com.nasdroid.reporting.logic.mockInvalidGetGraphData
@@ -17,102 +17,70 @@ import kotlin.test.assertEquals
 
 class GetZfsGraphsTest {
 
-    private lateinit var reportingV2Api: ReportingV2Api
+    private lateinit var reportingApi: ReportingApi
 
     private lateinit var getZfsGraphs: GetZfsGraphs
 
     @BeforeTest
     fun setUp() {
-        reportingV2Api = mockk()
+        reportingApi = mockk()
 
-        getZfsGraphs = GetZfsGraphs(reportingV2Api, Dispatchers.Default)
+        getZfsGraphs = GetZfsGraphs(reportingApi, Dispatchers.Default)
     }
 
     @Test
     fun `given data is valid, when graphs requested, then result is five item success`() = runTest {
-        mockValidGetGraphData(reportingV2Api)
+        mockValidGetGraphData(reportingApi)
 
         val result = getZfsGraphs()
 
-        kotlin.test.assertEquals(
-            StrongResult.success(
-                listOf(
-                    FloatGraph(
-                        dataSlices = DEFAULT_VALID_DATA.map {
-                            Graph.DataSlice(
-                                timestamp = Instant.fromEpochSeconds(it.first().toLong()),
-                                data = it.drop(1).map { it.toFloat() }
-                            )
-                        },
-                        legend = emptyList(),
-                        name = "arcactualrate",
-                        identifier = null,
-                        start = Instant.fromEpochSeconds(1714556421),
-                        end = Instant.fromEpochSeconds(1714556421),
-                        verticalLabel = "Events/s"
-                    ),
-                    FloatGraph(
-                        dataSlices = DEFAULT_VALID_DATA.map {
-                            Graph.DataSlice(
-                                timestamp = Instant.fromEpochSeconds(it.first().toLong()),
-                                data = it.drop(1).map { it.toFloat() }
-                            )
-                        },
-                        legend = emptyList(),
-                        name = "arcrate",
-                        identifier = null,
-                        start = Instant.fromEpochSeconds(1714556421),
-                        end = Instant.fromEpochSeconds(1714556421),
-                        verticalLabel = "Events/s"
-                    ),
-                    CapacityGraph(
-                        dataSlices = DEFAULT_VALID_DATA.map {
-                            Graph.DataSlice(
-                                timestamp = Instant.fromEpochSeconds(it.first().toLong()),
-                                data = it.drop(1).map { it.mebibytes }
-                            )
-                        },
-                        legend = emptyList(),
-                        name = "arcsize",
-                        identifier = null,
-                        start = Instant.fromEpochSeconds(1714556421),
-                        end = Instant.fromEpochSeconds(1714556421),
-                    ),
-                    PercentageGraph(
-                        dataSlices = DEFAULT_VALID_DATA.map {
-                            Graph.DataSlice(
-                                timestamp = Instant.fromEpochSeconds(it.first().toLong()),
-                                data = it.drop(1).map { it.percent }
-                            )
-                        },
-                        legend = emptyList(),
-                        name = "arcresult",
-                        identifier = "demand_data",
-                        start = Instant.fromEpochSeconds(1714556421),
-                        end = Instant.fromEpochSeconds(1714556421),
-                    ),
-                    PercentageGraph(
-                        dataSlices = DEFAULT_VALID_DATA.map {
-                            Graph.DataSlice(
-                                timestamp = Instant.fromEpochSeconds(it.first().toLong()),
-                                data = it.drop(1).map { it.percent }
-                            )
-                        },
-                        legend = emptyList(),
-                        name = "arcresult",
-                        identifier = "prefetch_data",
-                        start = Instant.fromEpochSeconds(1714556421),
-                        end = Instant.fromEpochSeconds(1714556421),
-                    )
-                )
+        assertEquals(StrongResult.success(createExpectedZfsGraphs()), result)
+    }
+
+    private fun createExpectedZfsGraphs(): List<Graph<*>> {
+        val defaultInstant = Instant.fromEpochSeconds(1714556421)
+        val floatSlices = DEFAULT_VALID_DATA.map {
+            Graph.DataSlice(Instant.fromEpochSeconds(it.first().toLong()), it.drop(1).map { it.toFloat() })
+        }
+        return listOf(
+            FloatGraph(floatSlices, emptyList(), "arcactualrate", null, defaultInstant, defaultInstant, "Events/s"),
+            FloatGraph(floatSlices, emptyList(), "arcrate", null, defaultInstant, defaultInstant, "Events/s"),
+            CapacityGraph(
+                DEFAULT_VALID_DATA.map {
+                    Graph.DataSlice(Instant.fromEpochSeconds(it.first().toLong()), it.drop(1).map { it.mebibytes })
+                },
+                emptyList(),
+                "arcsize",
+                null,
+                defaultInstant,
+                defaultInstant,
             ),
-            result
+            PercentageGraph(
+                DEFAULT_VALID_DATA.map {
+                    Graph.DataSlice(Instant.fromEpochSeconds(it.first().toLong()), it.drop(1).map { it.percent })
+                },
+                emptyList(),
+                "arcresult",
+                "demand_data",
+                defaultInstant,
+                defaultInstant,
+            ),
+            PercentageGraph(
+                DEFAULT_VALID_DATA.map {
+                    Graph.DataSlice(Instant.fromEpochSeconds(it.first().toLong()), it.drop(1).map { it.percent })
+                },
+                emptyList(),
+                "arcresult",
+                "prefetch_data",
+                defaultInstant,
+                defaultInstant,
+            )
         )
     }
 
     @Test
     fun `given invalid data, when graphs requested, then error invalid data returned`() = runTest {
-        mockInvalidGetGraphData(reportingV2Api)
+        mockInvalidGetGraphData(reportingApi)
 
         val result = getZfsGraphs()
 

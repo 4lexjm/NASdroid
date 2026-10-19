@@ -8,7 +8,7 @@ import com.boswelja.percentage.Percentage
 import com.boswelja.percentage.Percentage.Companion.percent
 import com.boswelja.temperature.Temperature
 import com.boswelja.temperature.Temperature.Companion.celsius
-import com.nasdroid.api.v2.reporting.ReportingGraphData
+import com.nasdroid.api.websocket.reporting.GraphData
 import kotlinx.datetime.Instant
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
@@ -74,16 +74,20 @@ data class PercentageGraph(
     override val identifier: String?,
     override val start: Instant,
     override val end: Instant
-): Graph<Percentage> {
+) : Graph<Percentage> {
+    /**
+     * Factory methods for creating [PercentageGraph] instances.
+     */
     companion object {
         /**
-         * Maps this [ReportingGraphData] to a new [PercentageGraph].
+         * Maps this [GraphData] to a new [PercentageGraph].
          */
-        fun ReportingGraphData.toPercentageGraph(): PercentageGraph {
+        fun GraphData.toPercentageGraph(): PercentageGraph {
             return PercentageGraph(
                 dataSlices = data
                     .map { data ->
                         val dataNoNulls = data.requireNoNulls()
+                        require(dataNoNulls.isNotEmpty()) { ERR_ROW_EMPTY }
                         val timestampSeconds = dataNoNulls.first().toLong()
                         Graph.DataSlice(
                             timestamp = Instant.fromEpochSeconds(timestampSeconds),
@@ -110,16 +114,20 @@ data class TemperatureGraph(
     override val identifier: String?,
     override val start: Instant,
     override val end: Instant
-): Graph<Temperature> {
+) : Graph<Temperature> {
+    /**
+     * Factory methods for creating [TemperatureGraph] instances.
+     */
     companion object {
         /**
-         * Maps this [ReportingGraphData] to a new [TemperatureGraph].
+         * Maps this [GraphData] to a new [TemperatureGraph].
          */
-        fun ReportingGraphData.toTemperatureGraph(): TemperatureGraph {
+        fun GraphData.toTemperatureGraph(): TemperatureGraph {
             return TemperatureGraph(
                 dataSlices = data
                     .map { data ->
                         val dataNoNulls = data.requireNoNulls()
+                        require(dataNoNulls.isNotEmpty()) { ERR_ROW_EMPTY }
                         val timestampSeconds = dataNoNulls.first().toLong()
                         Graph.DataSlice(
                             timestamp = Instant.fromEpochSeconds(timestampSeconds),
@@ -146,19 +154,23 @@ data class CapacityGraph(
     override val identifier: String?,
     override val start: Instant,
     override val end: Instant
-): Graph<Capacity> {
+) : Graph<Capacity> {
+    /**
+     * Factory methods for creating [CapacityGraph] instances.
+     */
     companion object {
         /**
-         * Maps this [ReportingGraphData] to a new [CapacityGraph].
+         * Maps this [GraphData] to a new [CapacityGraph].
          *
-         * @param transform Defines for data is transformed into a [Capacity]. By default, it is
+         * @param transform Defines how data is transformed into a [Capacity]. By default, it is
          * assumed that data is in mebibytes.
          */
-        fun ReportingGraphData.toCapacityGraph(transform: (Double) -> Capacity = { it.mebibytes }): CapacityGraph {
+        fun GraphData.toCapacityGraph(transform: (Double) -> Capacity = { it.mebibytes }): CapacityGraph {
             return CapacityGraph(
                 dataSlices = data
                     .map { data ->
                         val dataNoNulls = data.requireNoNulls()
+                        require(dataNoNulls.isNotEmpty()) { ERR_ROW_EMPTY }
                         val timestampSeconds = dataNoNulls.first().toLong()
                         Graph.DataSlice(
                             timestamp = Instant.fromEpochSeconds(timestampSeconds),
@@ -185,16 +197,20 @@ data class BitrateGraph(
     override val identifier: String?,
     override val start: Instant,
     override val end: Instant
-): Graph<Bitrate> {
+) : Graph<Bitrate> {
+    /**
+     * Factory methods for creating [BitrateGraph] instances.
+     */
     companion object {
         /**
-         * Maps this [ReportingGraphData] to a new [BitrateGraph].
+         * Maps this [GraphData] to a new [BitrateGraph].
          */
-        fun ReportingGraphData.toBitrateGraph(): BitrateGraph {
+        fun GraphData.toBitrateGraph(): BitrateGraph {
             return BitrateGraph(
                 dataSlices = data
                     .map { data ->
                         val dataNoNulls = data.requireNoNulls()
+                        require(dataNoNulls.isNotEmpty()) { ERR_ROW_EMPTY }
                         val timestampSeconds = dataNoNulls.first().toLong()
                         Graph.DataSlice(
                             timestamp = Instant.fromEpochSeconds(timestampSeconds),
@@ -221,19 +237,23 @@ data class DurationGraph(
     override val identifier: String?,
     override val start: Instant,
     override val end: Instant
-): Graph<Duration> {
+) : Graph<Duration> {
+    /**
+     * Factory methods for creating [DurationGraph] instances.
+     */
     companion object {
         /**
-         * Maps this [ReportingGraphData] to a new [DurationGraph].
+         * Maps this [GraphData] to a new [DurationGraph].
          *
-         * @param transform Defines for data is transformed into a [Duration]. By default, it is
+         * @param transform Defines how data is transformed into a [Duration]. By default, it is
          * assumed that data is in seconds.
          */
-        fun ReportingGraphData.toDurationGraph(transform: (Double) -> Duration = { it.seconds }): DurationGraph {
+        fun GraphData.toDurationGraph(transform: (Double) -> Duration = { it.seconds }): DurationGraph {
             return DurationGraph(
                 dataSlices = data
                     .map { data ->
                         val dataNoNulls = data.requireNoNulls()
+                        require(dataNoNulls.isNotEmpty()) { ERR_ROW_EMPTY }
                         val timestampSeconds = dataNoNulls.first().toLong()
                         Graph.DataSlice(
                             timestamp = Instant.fromEpochSeconds(timestampSeconds),
@@ -264,18 +284,22 @@ data class FloatGraph(
      * The human-readable label for the graphs vertical axis.
      */
     val verticalLabel: String,
-): Graph<Float> {
+) : Graph<Float> {
+    /**
+     * Factory methods for creating [FloatGraph] instances.
+     */
     companion object {
         /**
-         * Maps this [ReportingGraphData] to a new [FloatGraph].
+         * Maps this [GraphData] to a new [FloatGraph].
          *
          * @param verticalLabel The label for the vertical axis data.
          */
-        fun ReportingGraphData.toFloatGraph(verticalLabel: String): FloatGraph {
+        fun GraphData.toFloatGraph(verticalLabel: String): FloatGraph {
             return FloatGraph(
                 dataSlices = data
                     .map { data ->
                         val dataNoNulls = data.requireNoNulls()
+                        require(dataNoNulls.isNotEmpty()) { ERR_ROW_EMPTY }
                         val timestampSeconds = dataNoNulls.first().toLong()
                         Graph.DataSlice(
                             timestamp = Instant.fromEpochSeconds(timestampSeconds),
@@ -292,3 +316,6 @@ data class FloatGraph(
         }
     }
 }
+
+private const val ERR_ROW_EMPTY = "Graph data row cannot be empty."
+

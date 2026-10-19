@@ -109,6 +109,7 @@ fun AvailableAppDetailsScreen(
 /**
  * Displays details about a single installable app in a vertically scrolling layout.
  */
+@Suppress("LongMethod")
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun AvailableAppDetailsVerticalContent(

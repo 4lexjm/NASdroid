@@ -1,8 +1,8 @@
 package com.nasdroid.dashboard.logic.dataloading.network
 
 import com.nasdroid.api.v2.exception.HttpNotOkException
-import com.nasdroid.api.v2.reporting.ReportingGraph
-import com.nasdroid.api.v2.reporting.ReportingV2Api
+import com.nasdroid.api.websocket.reporting.ReportingApi
+import com.nasdroid.api.websocket.reporting.ReportingGraph
 import io.mockk.coEvery
 import io.mockk.mockk
 import kotlinx.coroutines.test.runTest
@@ -13,7 +13,7 @@ import kotlin.test.assertTrue
 
 class GetNetworkConfigurationTest {
 
-    private lateinit var mockReportingApi: ReportingV2Api
+    private lateinit var mockReportingApi: ReportingApi
 
     private lateinit var getNetworkConfiguration: GetNetworkConfiguration
 
@@ -27,7 +27,7 @@ class GetNetworkConfigurationTest {
     @Test
     fun `when api throws, error is returned`() = runTest {
         coEvery {
-            mockReportingApi.getReportingGraphs(any(), any(), any())
+            mockReportingApi.graphs(any(), any())
         } throws HttpNotOkException(418, "I'm a teapot")
 
         val result = getNetworkConfiguration()
@@ -42,7 +42,7 @@ class GetNetworkConfigurationTest {
     @Test
     fun `when api returns data, data is returned`() = runTest {
         coEvery {
-            mockReportingApi.getReportingGraphs(any(), any(), any())
+            mockReportingApi.graphs(any(), any())
         } returns realGraphData
 
         val result = getNetworkConfiguration()

@@ -1,8 +1,8 @@
 package com.nasdroid.reporting.logic.graph
 
-import com.nasdroid.api.v2.reporting.ReportingV2Api
-import com.nasdroid.api.v2.reporting.RequestedGraph
-import com.nasdroid.api.v2.reporting.Units
+import com.nasdroid.api.websocket.reporting.GraphUnit
+import com.nasdroid.api.websocket.reporting.ReportingApi
+import com.nasdroid.api.websocket.reporting.RequestedGraph
 import com.nasdroid.core.strongresult.StrongResult
 import com.nasdroid.reporting.logic.graph.BitrateGraph.Companion.toBitrateGraph
 import kotlinx.coroutines.CoroutineDispatcher
@@ -12,7 +12,7 @@ import kotlinx.coroutines.withContext
  * Retrieves the data needed to display all network-related graphs. See [invoke] for details.
  */
 class GetNetworkGraphs(
-    private val reportingV2Api: ReportingV2Api,
+    private val reportingApi: ReportingApi,
     private val calculationDispatcher: CoroutineDispatcher,
 ) {
 
@@ -32,16 +32,16 @@ class GetNetworkGraphs(
             return@withContext StrongResult.success(emptyList())
         }
         try {
-            val reportingData = reportingV2Api.getGraphData(
+            val reportingData = reportingApi.getData(
                 graphs = interfaces.map {
-                    RequestedGraph("interface", it)
+                    RequestedGraph(RequestedGraph.GraphName.InterfaceTraffic, it)
                 },
                 unit = when (timeframe) {
-                    GraphTimeframe.Hour -> Units.HOUR
-                    GraphTimeframe.Day -> Units.DAY
-                    GraphTimeframe.Week -> Units.WEEK
-                    GraphTimeframe.Month -> Units.MONTH
-                    GraphTimeframe.Year -> Units.YEAR
+                    GraphTimeframe.Hour -> GraphUnit.Hour
+                    GraphTimeframe.Day -> GraphUnit.Day
+                    GraphTimeframe.Week -> GraphUnit.Week
+                    GraphTimeframe.Month -> GraphUnit.Month
+                    GraphTimeframe.Year -> GraphUnit.Year
                 },
                 page = 1
             )

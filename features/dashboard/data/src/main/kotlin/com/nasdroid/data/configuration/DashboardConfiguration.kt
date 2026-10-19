@@ -54,9 +54,24 @@ data class DashboardEntry(
      * All supported types of dashboard elements.
      */
     enum class Type {
+        /**
+         * Basic system metadata card.
+         */
         SYSTEM_INFORMATION,
+
+        /**
+         * CPU utilisation and specification card.
+         */
         CPU,
+
+        /**
+         * Memory usage and capacity card.
+         */
         MEMORY,
+
+        /**
+         * Network interfaces throughput and configuration card.
+         */
         NETWORK,
     }
 }

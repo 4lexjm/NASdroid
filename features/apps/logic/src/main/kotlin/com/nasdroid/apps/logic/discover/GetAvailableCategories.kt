@@ -1,13 +1,14 @@
 package com.nasdroid.apps.logic.discover
 
 import com.nasdroid.api.v2.exception.HttpNotOkException
-import com.nasdroid.api.v2.app.AppV2Api
+import com.nasdroid.api.websocket.app.AppApi
+import com.nasdroid.api.websocket.jsonrpc.MethodCallError
 
 /**
  * Get a list of all available categories provided by all catalogs. See [invoke] for details.
  */
 class GetAvailableCategories(
-    private val appV2Api: AppV2Api
+    private val appApi: AppApi
 ) {
 
     /**
@@ -16,8 +17,10 @@ class GetAvailableCategories(
      */
     suspend operator fun invoke(): Result<List<String>> {
         return try {
-            val categories = appV2Api.getCategories()
+            val categories = appApi.categories()
             Result.success(categories)
+        } catch (e: MethodCallError) {
+            Result.failure(e)
         } catch (e: HttpNotOkException) {
             Result.failure(e)
         }

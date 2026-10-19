@@ -3,7 +3,7 @@ package com.nasdroid.auth.logic.auth
 import com.nasdroid.api.websocket.apiKey.AllowedMethod
 import com.nasdroid.api.websocket.apiKey.ApiKeyApi
 import com.nasdroid.api.websocket.apiKey.NewApiKey
-import com.nasdroid.api.websocket.ddp.MethodCallError
+import com.nasdroid.api.websocket.jsonrpc.MethodCallError
 import com.nasdroid.core.strongresult.StrongResult
 
 /**
@@ -19,13 +19,24 @@ class CreateApiKey(
      */
     suspend operator fun invoke(
         name: String,
+        username: String? = null,
     ): StrongResult<String, CreateApiKeyError> {
         return try {
-            val key = apiKeyApi.create(NewApiKey(name, listOf(AllowedMethod(AllowedMethod.Method.All, "*"))))
+            val key = apiKeyApi.create(
+                NewApiKey(
+                    name = name,
+                    username = username,
+                    allowList = listOf(AllowedMethod(AllowedMethod.Method.All, "*")),
+                )
+            )
             StrongResult.success(key.key)
         } catch (e: MethodCallError) {
-            // Not really sure what all possible causes of this are, but I do know it'll happen with
-            // duplicate names.
+            if (e.message?.contains("Not authenticated", ignoreCase = true) == true) {
+                StrongResult.failure(CreateApiKeyError.InvalidCredentials)
+            } else {
+                StrongResult.failure(CreateApiKeyError.KeyAlreadyExists)
+            }
+        } catch (e: com.nasdroid.api.websocket.ddp.MethodCallError) {
             when (e.error) {
                 "207" -> StrongResult.failure(CreateApiKeyError.InvalidCredentials)
                 else -> StrongResult.failure(CreateApiKeyError.KeyAlreadyExists)

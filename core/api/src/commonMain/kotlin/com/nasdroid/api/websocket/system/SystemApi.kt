@@ -69,8 +69,14 @@ interface SystemApi {
 
     /**
      * Reboot the system.
+     *
+     * @param delay Optional delay before the system reboots.
+     * @param reason Human-readable reason for the reboot (required in TrueNAS 25.04+).
      */
-    suspend fun reboot(delay: Duration): Int
+    suspend fun reboot(
+        delay: Duration? = null,
+        reason: String = "Reboot initiated from NASdroid",
+    ): Int
 
     /**
      * Returns the release notes URL for a version of SCALE.
@@ -84,9 +90,14 @@ interface SystemApi {
     /**
      * Shutdown the system.
      *
+     * @param delay Optional delay before the system shuts down.
+     * @param reason Human-readable reason for the shutdown (required in TrueNAS 25.04+).
      * @throws HttpNotOkException
      */
-    suspend fun shutdown(delay: Duration): Int
+    suspend fun shutdown(
+        delay: Duration? = null,
+        reason: String = "Shutdown initiated from NASdroid",
+    ): Int
 
     /**
      * Get the current system state.
@@ -174,32 +185,45 @@ enum class ProductType {
      * TrueNAS SCALE Enterprise, appliance version.
      */
     @SerialName("SCALE_ENTERPRISE")
-    ScaleEnterprise
+    ScaleEnterprise,
+
+    /**
+     * TrueNAS Community Edition (TrueNAS 25.04+).
+     */
+    @SerialName("COMMUNITY_EDITION")
+    CommunityEdition,
+
+    /**
+     * TrueNAS Enterprise (TrueNAS 25.04+).
+     */
+    @SerialName("ENTERPRISE")
+    Enterprise,
 }
 
 /**
  * Basic system information.
  *
- * @property version The full version of the product this system is running. See [SystemV2Api.getVersion].
+ * @property version The full version of the product this system is running.
  * @property buildTime The time that the systems product version was built.
  * @property hostName The systems host name. It should be identifiable on the local network via this.
  * @property physicalMemory The amount of physical memory the system has, in Bytes.
  * @property cpuModel The model name of the CPU this system has.
  * @property cores The total number of cores and threads the system has.
  * @property physicalCores The number of physical cores the system has.
- * @property loadAvg TODO
+ * @property loadAvg The system load averages (1, 5, and 15 minutes).
  * @property uptime The amount of time the system has been running for.
  * @property uptimeSeconds The number of seconds the system has been up for.
  * @property systemSerial The serial number of the system, as specified by the OEM.
  * @property systemProduct The system product name, as specified by the OEM.
- * @property systemProductVersion TODO
- * @property license The systems license file, or null if not present.
+ * @property systemProductVersion The system product version, as specified by the OEM.
+ * @property license The systems license object, or null if not present.
  * @property bootTime The time this system was last booted.
  * @property dateTime The current time, according to the system.
  * @property timeZone The time zone the system is configured to use.
  * @property systemManufacturer The company that produced the system.
  * @property eccMemory Whether the server has ECC memory.
  */
+@Suppress("BooleanPropertyNaming")
 @Serializable
 data class SystemInfo(
     @SerialName("version")
@@ -224,13 +248,13 @@ data class SystemInfo(
     @SerialName("uptime_seconds")
     val uptimeSeconds: Double,
     @SerialName("system_serial")
-    val systemSerial: String,
+    val systemSerial: String? = null,
     @SerialName("system_product")
-    val systemProduct: String,
+    val systemProduct: String? = null,
     @SerialName("system_product_version")
-    val systemProductVersion: String,
+    val systemProductVersion: String? = null,
     @SerialName("license")
-    val license: String?, // TODO Should be an object?
+    val license: kotlinx.serialization.json.JsonElement? = null,
     @Serializable(EDateInstantSerializer::class)
     @SerialName("boottime")
     val bootTime: Instant,
@@ -240,7 +264,7 @@ data class SystemInfo(
     @SerialName("timezone")
     val timeZone: TimeZone,
     @SerialName("system_manufacturer")
-    val systemManufacturer: String,
+    val systemManufacturer: String? = null,
     @SerialName("ecc_memory")
     val eccMemory: Boolean
 )

@@ -4,8 +4,9 @@ import com.boswelja.capacity.Capacity
 import com.boswelja.capacity.Capacity.Companion.megabytes
 import com.boswelja.capacity.CapacityUnit
 import com.nasdroid.api.v2.exception.HttpNotOkException
-import com.nasdroid.api.v2.reporting.ReportingV2Api
-import com.nasdroid.api.v2.reporting.RequestedGraph
+import com.nasdroid.api.websocket.jsonrpc.MethodCallError
+import com.nasdroid.api.websocket.reporting.ReportingApi
+import com.nasdroid.api.websocket.reporting.RequestedGraph
 import kotlinx.datetime.Clock
 import kotlin.time.Duration.Companion.seconds
 
@@ -13,7 +14,7 @@ import kotlin.time.Duration.Companion.seconds
  * Retrieves memory-related utilisation data. See [invoke] for details.
  */
 class GetMemoryUsageData(
-    private val reportingV2Api: ReportingV2Api
+    private val reportingApi: ReportingApi
 ) {
 
     /**
@@ -23,8 +24,8 @@ class GetMemoryUsageData(
     suspend operator fun invoke(): Result<MemoryUsageData> {
         return try {
             val now = Clock.System.now()
-            val graph = reportingV2Api.getGraphData(
-                graphs = listOf(RequestedGraph(MEMORY_GRAPH_NAME, null)),
+            val graph = reportingApi.getData(
+                graphs = listOf(RequestedGraph(RequestedGraph.GraphName.MemoryUsage, null)),
                 start = now - 20.seconds,
                 end = now,
             ).first()
@@ -32,7 +33,7 @@ class GetMemoryUsageData(
             val usedIndex = graph.legend.indexOf("used")
             val cachedIndex = graph.legend.indexOf("cached")
             val buffersIndex = graph.legend.indexOf("buffers")
-            val memoryData = graph.data.last { !it.contains(null) } as List<Double>
+            val memoryData = graph.data.last { !it.contains(null) }.requireNoNulls()
             Result.success(
                 MemoryUsageData(
                     used = memoryData[usedIndex].megabytes,
@@ -40,13 +41,11 @@ class GetMemoryUsageData(
                     cached = memoryData[cachedIndex].megabytes + memoryData[buffersIndex].megabytes
                 )
             )
+        } catch (e: MethodCallError) {
+            Result.failure(e)
         } catch (e: HttpNotOkException) {
             Result.failure(e)
         }
-    }
-
-    companion object {
-        private const val MEMORY_GRAPH_NAME = "memory"
     }
 }
 

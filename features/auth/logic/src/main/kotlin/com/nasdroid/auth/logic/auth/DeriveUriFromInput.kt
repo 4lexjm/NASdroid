@@ -5,21 +5,22 @@ import com.nasdroid.core.strongresult.StrongResult
 
 /**
  * Takes some user input, and derives a URL pointing to the TrueNAS websocket API. For example, entering `truenas.local`
- * would return `ws://truenas.local/websocket`. Note that no guarantees are made to the validity of the URL. See [invoke]
+ * would return `ws://truenas.local/api/current`. Note that no guarantees are made to the validity of the URL. See [invoke]
  * for details.
  */
 class DeriveUriFromInput {
 
     /**
      * Takes an [input] String and attempts to transform it to a URL pointing to a TrueNAS websocket API. For example,
-     * entering `truenas.local` would return `ws://truenas.local/websocket`. If this process is not successful, a
+     * entering `truenas.local` would return `ws://truenas.local/api/current`. If this process is not successful, a
      * [DeriveUriError] is returned.
      *
      * Best-effort mapping is performed on the input scheme, where `http/s` is mapped to `ws/s`, and a missing scheme is
      * mapped to ws. It is an error to pass any other scheme.
      *
-     * If a path is not specified, `/websocket` is appended automatically.
+     * If a path is not specified, `/api/current` is appended automatically.
      */
+    @Suppress("ReturnCount")
     operator fun invoke(input: String): StrongResult<String, DeriveUriError> {
         val uri = Uri.parseOrNull(input) ?: return StrongResult.failure(DeriveUriError.InvalidUri)
 
@@ -39,10 +40,12 @@ class DeriveUriFromInput {
             // This is a bit of an odd state where a url like `truenas.local` has no authority, but does have a path.
             // Let's rectify that.
             val authority = uri.pathSegments.firstOrNull() ?: return StrongResult.failure(DeriveUriError.InvalidUri)
-            if (authority.contains(" ")) return StrongResult.failure(DeriveUriError.InvalidUri)
+            if (authority.contains(" ")) {
+                return StrongResult.failure(DeriveUriError.InvalidUri)
+            }
             val pathSegments = uri.pathSegments.drop(1).joinToString("/")
             val path = when (pathSegments) {
-                "" -> "/websocket"
+                "" -> "/api/current"
                 else -> pathSegments
             }
 
@@ -52,7 +55,7 @@ class DeriveUriFromInput {
         } else {
             val path = when (uri.path) {
                 null,
-                "" -> "/websocket"
+                "" -> "/api/current"
                 else -> uri.path
             }
             builder = builder
@@ -73,7 +76,7 @@ class DeriveUriFromInput {
 enum class DeriveUriError {
     /**
      * Indicates the input was a correctly formed URI, but the scheme specified was not valid. We expect to use
-     * websockets, so a scheme of wither `ws` or `wss` is required.
+     * websockets, so a scheme of either `ws` or `wss` is required.
      */
     InvalidScheme,
 
